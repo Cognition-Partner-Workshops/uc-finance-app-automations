@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Exec(git remote)",
+      "Exec(git status)",
+      "Exec(mkdir)",
+      "Exec(python)",
+      "Exec(npx eslint)",
+      "Exec(python3)",
+      "Exec(pip3 install)",
+      "Exec(git add)",
+      "Exec(git log)",
+      "Exec(git push)",
+      "Exec(gh repo)",
+      "Exec(gh issue)",
+      "Exec(git branch)",
+      "Exec(git checkout)",
+      "Exec(gh pr)",
+      "Exec(git pull)",
+      "Exec(ls)",
+      "Exec(find)",
+      "Exec(source)",
+      "Exec(head)"
+    ]
+  }
+}
