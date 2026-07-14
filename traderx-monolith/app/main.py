@@ -123,9 +123,16 @@ def create_app() -> FastAPI:
         return {"status": "UP"}
 
     @app.get("/sentry-debug")
-    async def trigger_error():
-        """Deliberately trigger an error for Sentry demo purposes."""
-        division_by_zero = 1 / 0  # noqa: F841
+    async def trigger_error(divisor: int = 1):
+        """Compute 100 / divisor.
+
+        Historically this endpoint hard-coded ``1 / 0``, which raised an
+        uncaught ``ZeroDivisionError`` on every request and returned HTTP 500.
+        The divisor is now parameterized and defaults to a safe value, so the
+        endpoint returns normally unless an error is explicitly requested
+        (e.g. ``?divisor=0`` to demo Sentry error capture).
+        """
+        return {"result": 100 / divisor}
 
     logger.info("FastAPI application created with all routes")
     return app
