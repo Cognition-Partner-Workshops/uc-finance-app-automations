@@ -42,18 +42,37 @@ export function fetchWithTenant(
   headers.set('X-Tenant-ID', currentTenant);
   const method = (init?.method || 'GET').toUpperCase();
 
-  return fetch(input, { ...init, headers }).then((response) => {
-    if (response.status >= 500) {
-      response
-        .clone()
-        .text()
-        .then((body) => {
-          emitApiError({ status: response.status, method, endpoint: toEndpoint(input), body });
-        })
-        .catch(() => {
-          emitApiError({ status: response.status, method, endpoint: toEndpoint(input), body: '' });
-        });
-    }
-    return response;
-  });
+  return fetch(input, { ...init, headers })
+    .then((response) => {
+      if (response.status >= 500) {
+        response
+          .clone()
+          .text()
+          .then((body) => {
+            emitApiError({ status: response.status, method, endpoint: toEndpoint(input), body });
+          })
+          .catch(() => {
+            emitApiError({ status: response.status, method, endpoint: toEndpoint(input), body: '' });
+          });
+      }
+      return response;
+    })
+    .catch((error) => {
+      // A rejected fetch means a network-level failure. In this app that most
+      // commonly happens when the server throws an unhandled 500: the error
+      // response is returned without CORS headers, so the browser surfaces it
+      // as a failed request rather than a readable response.
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error; // expected when an in-flight request is superseded
+      }
+      emitApiError({
+        status: 0,
+        method,
+        endpoint: toEndpoint(input),
+        body:
+          'The request failed. This usually means the server returned an ' +
+          'unhandled error (HTTP 500) or is unreachable.',
+      });
+      throw error;
+    });
 }
