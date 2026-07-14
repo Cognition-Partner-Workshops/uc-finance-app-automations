@@ -39,9 +39,7 @@ def test_submit_trade_buy(client):
 
 
 def test_submit_trade_closing_position_to_zero(client):
-    """Regression (Sentry TRADER-DEMO-APP-5): selling the entire position drives
-    the net quantity to 0, which must not raise ZeroDivisionError in the
-    position-change-percent calculation."""
+    """Verify selling an entire position leaves a zero net quantity."""
     acct = client.post("/account/", json={"displayName": "Closeout Account"})
     account_id = acct.json()["id"]
 
