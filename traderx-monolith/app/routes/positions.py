@@ -52,8 +52,12 @@ def list_positions_by_account(account_id: int, request: Request,
         Position.tenant_id == tenant_id,
     ).all()
 
-    top_holding = max(p.quantity for p in positions)
-    logger.info("Account %d largest position: %d shares (tenant %s)",
-                account_id, top_holding, tenant_id)
+    top_holding = max((p.quantity for p in positions), default=None)
+    if top_holding is not None:
+        logger.info("Account %d largest position: %d shares (tenant %s)",
+                    account_id, top_holding, tenant_id)
+    else:
+        logger.info("Account %d has no positions (tenant %s)",
+                    account_id, tenant_id)
 
     return [p.to_dict() for p in positions]
