@@ -64,6 +64,32 @@ def test_get_trade_analytics_with_data(client):
     assert data["recentActivity"]["last30Days"] == 3
 
 
+def test_get_trade_analytics_buy_sell_ratio_no_sells(client):
+    """Regression: buySellRatio must be None (undefined) when there are no sells.
+
+    Previously the ratio fell back to the raw buy count when sell_count == 0,
+    reporting a count as if it were a ratio (e.g. 2 buys / 0 sells -> 2.0).
+    """
+    account_resp = client.post("/account/", json={"displayName": "Buys Only"})
+    account_id = account_resp.json()["id"]
+
+    for _ in range(2):
+        client.post("/trade/", json={
+            "accountId": account_id,
+            "security": "AAPL",
+            "side": "Buy",
+            "quantity": 100,
+        })
+
+    resp = client.get("/analytics/trades")
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert data["buyCount"] == 2
+    assert data["sellCount"] == 0
+    assert data["buySellRatio"] is None
+
+
 def test_get_account_trade_analytics_empty(client):
     """Test getting account trade analytics when account has no trades."""
     # Create an account

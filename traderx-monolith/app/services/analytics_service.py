@@ -56,7 +56,9 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
     # Buy vs Sell counts
     buy_count = base_query.filter(Trade.side == "Buy").count()
     sell_count = base_query.filter(Trade.side == "Sell").count()
-    buy_sell_ratio = buy_count / sell_count if sell_count > 0 else buy_count
+    # Buy/sell ratio is undefined when there are no sells. Report None instead
+    # of the raw buy count, which is a count and not a ratio.
+    buy_sell_ratio = round(buy_count / sell_count, 2) if sell_count > 0 else None
     
     # Trade counts by state
     trades_by_state = dict(
@@ -86,7 +88,7 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
         "averageQuantity": round(float(avg_quantity), 2),
         "buyCount": buy_count,
         "sellCount": sell_count,
-        "buySellRatio": round(float(buy_sell_ratio), 2),
+        "buySellRatio": buy_sell_ratio,
         "tradesByState": trades_by_state,
         "tradesBySecurity": trades_by_security,
         "recentActivity": {
