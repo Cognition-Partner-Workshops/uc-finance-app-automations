@@ -118,9 +118,6 @@ def validate_security_exists(security: str) -> bool:
     """
     logger.debug("Validating security: %s", security)
     stock = find_stock_by_ticker(security)
-    if stock is None:
-        logger.warning("Security %s not found in reference data", security)
-        return False
 
     logger.info("Security %s validated: %s", security, stock["companyName"])
     return True

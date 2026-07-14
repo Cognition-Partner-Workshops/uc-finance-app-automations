@@ -84,9 +84,6 @@ def get_account(account_id: int, request: Request,
     """
     tenant_id = get_tenant_from_request(request)
     account = account_service.get_account_by_id(db, account_id, tenant_id)
-    if account is None:
-        raise HTTPException(status_code=404,
-                            detail=f"Account {account_id} not found")
 
     # Cross-domain query: directly query positions table for portfolio summary
     positions = db.query(Position).filter(
