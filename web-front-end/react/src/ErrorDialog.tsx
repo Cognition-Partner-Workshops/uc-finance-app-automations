@@ -69,7 +69,7 @@ export const ErrorDialog = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Chip
-                label={`HTTP ${error.status}`}
+                label={error.status > 0 ? `HTTP ${error.status}` : 'Request Failed'}
                 size="small"
                 sx={{ bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 700 }}
               />
