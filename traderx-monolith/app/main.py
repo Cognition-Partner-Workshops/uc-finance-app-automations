@@ -8,6 +8,7 @@ import os
 
 import sentry_sdk
 import socketio
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,6 +20,8 @@ from app.services.trade_processor import set_socketio_server
 # =============================================================================
 # Sentry SDK Initialization (must happen before app is created)
 # =============================================================================
+# Load environment variables from a local .env file if present (localhost demo).
+load_dotenv()
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 if SENTRY_DSN:
     sentry_sdk.init(
