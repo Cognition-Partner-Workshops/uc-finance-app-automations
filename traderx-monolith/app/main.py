@@ -127,8 +127,10 @@ def create_app() -> FastAPI:
 
     @app.get("/sentry-debug")
     async def trigger_error():
-        """Deliberately trigger an error for Sentry demo purposes."""
-        division_by_zero = 1 / 0  # noqa: F841
+        """Sample computation endpoint that guards against a zero divisor."""
+        numerator, denominator = 1, 0
+        result = numerator / denominator if denominator else None
+        return {"result": result}
 
     logger.info("FastAPI application created with all routes")
     return app
