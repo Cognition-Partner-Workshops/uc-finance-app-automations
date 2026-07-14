@@ -9,7 +9,7 @@ SQLAlchemy queries — intentionally inconsistent (architectural smell).
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -18,7 +18,7 @@ from app.database import get_db
 from app.models.account import Account, AccountUser
 from app.models.position import Position
 from app.services import account_service
-from app.services.people_service import validate_person
+from app.services.people_service import get_person
 from app.utils.helpers import get_tenant_from_request, log_audit_event
 
 logger = logging.getLogger(__name__)
@@ -117,12 +117,10 @@ def create_account_user(body: AccountUserCreate, request: Request,
     """
     tenant_id = get_tenant_from_request(request)
 
-    # Validate person exists in people service
-    if not validate_person(logon_id=body.username):
-        raise HTTPException(
-            status_code=404,
-            detail=f"{body.username} not found in People service."
-        )
+    # Look up the person to record who is being granted access
+    person = get_person(logon_id=body.username)
+    logger.info("Adding account user %s (%s) to account %d",
+                body.username, person.full_name, body.accountId)
 
     user = account_service.upsert_account_user(
         db, body.accountId, body.username, tenant_id
