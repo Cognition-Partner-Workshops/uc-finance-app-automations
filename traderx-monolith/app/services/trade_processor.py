@@ -235,9 +235,12 @@ def update_position(db: Session, account_id: int, security: str,
 
     db.flush()
 
-    position_change_pct = round(
-        (position.quantity - old_quantity) / position.quantity * 100, 2
-    )
+    if old_quantity != 0:
+        position_change_pct = round(
+            (position.quantity - old_quantity) / old_quantity * 100, 2
+        )
+    else:
+        position_change_pct = 0.0
     logger.info(
         "Position %s for account %d changed by %.2f%% (now %d shares)",
         security, account_id, position_change_pct, position.quantity,
