@@ -7,3 +7,4 @@ pydantic
 pytest
 httpx
 sentry-sdk
+python-dotenv

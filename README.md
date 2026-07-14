@@ -42,6 +42,52 @@ Navigate to [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
+## Sentry Demo (error monitoring)
+
+The backend reports uncaught server errors (HTTP 500s) to [Sentry](https://sentry.io) **only when a `SENTRY_DSN` is configured**. Without it, `sentry_sdk.init()` is skipped and nothing is sent — the errors still occur, but no alerts fire.
+
+### 1. Get a DSN
+
+In Sentry, open **Settings → Projects → _your project_ → Client Keys (DSN)** and copy the DSN. It looks like:
+
+```
+https://<publicKey>@o<org>.ingest.sentry.io/<projectId>
+```
+
+If you don't have a project yet, create one with platform **Python / FastAPI**.
+
+### 2. Configure it locally
+
+```bash
+cd traderx-monolith
+cp .env.example .env
+# edit .env and set SENTRY_DSN=...
+python run.py
+```
+
+The backend auto-loads `traderx-monolith/.env` on startup (via `python-dotenv`). Alternatively, export it in your shell before running:
+
+```bash
+export SENTRY_DSN="https://<publicKey>@o<org>.ingest.sentry.io/<projectId>"
+python run.py
+```
+
+> `.env` is git-ignored — never commit your DSN.
+
+### 3. Verify
+
+Trigger the built-in test error and confirm it appears in Sentry within a few seconds:
+
+```bash
+curl http://localhost:8000/sentry-debug
+```
+
+Any uncaught 500 from the app (e.g. the demo flows in the UI) will now show up as a Sentry issue.
+
+> Scope: this instruments the **backend** only (where the errors are raised). The React frontend is not wired to Sentry.
+
+---
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
