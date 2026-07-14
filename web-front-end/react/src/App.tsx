@@ -5,6 +5,7 @@ import { TenantProvider, useTenant, TENANTS, TenantId } from './TenantContext';
 import { setCurrentTenant } from './fetchWithTenant';
 import { reconnectSocket } from './socket';
 import * as socketModule from './socket';
+import { ErrorDialog } from './ErrorDialog';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -146,6 +147,7 @@ function App() {
           <Datatable />
         </Box>
       </Box>
+      <ErrorDialog />
     </TenantProvider>
   );
 }
