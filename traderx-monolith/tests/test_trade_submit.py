@@ -36,3 +36,31 @@ def test_submit_trade_buy(client):
     data = result.json()
     assert data["success"] == True
     assert data["trade"]["security"] == "MSFT"
+
+
+def test_sell_closing_position_to_zero(client):
+    """Regression for TRADER-DEMO-APP-5: selling the entire position brings the
+    quantity to exactly 0, which previously raised ZeroDivisionError when
+    computing the position change percentage in update_position."""
+    acct = client.post("/account/", json={"displayName": "Zero Account"})
+    account_id = acct.json()["id"]
+
+    buy = client.post("/trade/", json={
+        "accountId": account_id,
+        "security": "AAPL",
+        "side": "Buy",
+        "quantity": 70,
+    })
+    assert buy.status_code == 200
+    assert buy.json()["success"] is True
+
+    sell = client.post("/trade/", json={
+        "accountId": account_id,
+        "security": "AAPL",
+        "side": "Sell",
+        "quantity": 70,
+    })
+    assert sell.status_code == 200
+    body = sell.json()
+    assert body["success"] is True
+    assert body["position"]["quantity"] == 0
