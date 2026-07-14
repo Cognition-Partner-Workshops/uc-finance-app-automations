@@ -56,7 +56,7 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
     # Buy vs Sell counts
     buy_count = base_query.filter(Trade.side == "Buy").count()
     sell_count = base_query.filter(Trade.side == "Sell").count()
-    buy_sell_ratio = buy_count / sell_count if sell_count > 0 else buy_count
+    buy_sell_ratio = buy_count / sell_count
     
     # Trade counts by state
     trades_by_state = dict(
