@@ -8,7 +8,7 @@ trade_processor imports from here, and this module imports from trade_processor
 """
 
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
@@ -148,6 +148,28 @@ def get_trade_count_for_account(db: Session, account_id: int,
     """
     from app.services.trade_processor import count_trades_for_account
     return count_trades_for_account(db, account_id, tenant_id)
+
+
+def get_account_summary(db: Session, account_id: int,
+                        tenant_id: str) -> Optional[Dict]:
+    """
+    Get aggregated trade statistics for an account.
+    Delegates to the trade_processor portfolio aggregation (lazy import to
+    avoid the circular import at module load). Returns None when the account
+    does not exist for the tenant.
+    """
+    from app.services.trade_processor import get_account_portfolio_summary
+
+    account = get_account_by_id(db, account_id, tenant_id)
+    if account is None:
+        return None
+
+    summary = get_account_portfolio_summary(db, account_id, tenant_id)
+    return {
+        "accountId": account.id,
+        "displayName": account.display_name,
+        "statistics": summary["statistics"],
+    }
 
 
 def can_delete_account(db: Session, account_id: int, tenant_id: str) -> bool:
