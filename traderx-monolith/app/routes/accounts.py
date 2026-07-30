@@ -9,7 +9,7 @@ SQLAlchemy queries — intentionally inconsistent (architectural smell).
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -38,6 +38,16 @@ class AccountCreate(BaseModel):
 class AccountUserCreate(BaseModel):
     accountId: int
     username: str
+
+
+class AccountSummary(BaseModel):
+    accountId: int
+    totalTrades: int
+    settledTrades: int
+    pendingTrades: int
+    totalBuyQuantity: int
+    totalSellQuantity: int
+    netQuantity: int
 
 
 # =============================================================================
@@ -94,6 +104,18 @@ def get_account(account_id: int, request: Request,
     result = account.to_dict()
     result["positions"] = [p.to_dict() for p in positions]
     return result
+
+
+@router.get("/account/{account_id}/summary", response_model=AccountSummary)
+def get_account_summary(account_id: int, request: Request,
+                        db: Session = Depends(get_db)):
+    """Get aggregated trade statistics for an account."""
+    tenant_id = get_tenant_from_request(request)
+    summary = account_service.get_account_summary(db, account_id, tenant_id)
+    if summary is None:
+        raise HTTPException(status_code=404,
+                            detail=f"Account {account_id} not found")
+    return summary
 
 
 # =============================================================================

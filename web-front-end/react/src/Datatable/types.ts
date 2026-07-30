@@ -11,6 +11,16 @@ export interface TradeData {
 	created?: Date;
 }
 
+export interface AccountSummaryData {
+	accountId: number;
+	totalTrades: number;
+	settledTrades: number;
+	pendingTrades: number;
+	totalBuyQuantity: number;
+	totalSellQuantity: number;
+	netQuantity: number;
+}
+
 export interface PositionData {
 	accountId: number;
 	security: string;
