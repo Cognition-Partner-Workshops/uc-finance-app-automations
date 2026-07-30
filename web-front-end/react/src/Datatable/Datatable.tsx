@@ -226,7 +226,7 @@ export const Datatable = () => {
 					</Grid>
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
-							title="Net Quantity"
+							title="Net Settled Qty"
 							value={summary.netQuantity.toLocaleString()}
 							icon={<BarChartIcon sx={{ fontSize: 32 }} />}
 							color="#8b5cf6"
