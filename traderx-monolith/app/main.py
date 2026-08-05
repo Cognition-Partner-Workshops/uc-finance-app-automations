@@ -127,8 +127,12 @@ def create_app() -> FastAPI:
 
     @app.get("/sentry-debug")
     async def trigger_error():
-        """Deliberately trigger an error for Sentry demo purposes."""
-        division_by_zero = 1 / 0  # noqa: F841
+        """Report a test error to Sentry without failing the request."""
+        try:
+            division_by_zero = 1 / 0  # noqa: F841
+        except ZeroDivisionError as exc:
+            sentry_sdk.capture_exception(exc)
+        return {"status": "error captured"}
 
     logger.info("FastAPI application created with all routes")
     return app
