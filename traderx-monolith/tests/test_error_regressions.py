@@ -1,4 +1,5 @@
 """Regression tests for runtime errors that must never reach the client."""
+import sentry_sdk
 
 
 def test_list_positions_for_account_without_positions(client):
@@ -48,3 +49,10 @@ def test_sentry_debug_reports_without_failing(client):
 
     assert resp.status_code == 200
     assert resp.json() == {"status": "error captured"}
+
+
+def test_sentry_debug_does_not_send_events_during_tests(client):
+    resp = client.get("/sentry-debug")
+
+    assert resp.status_code == 200
+    assert not sentry_sdk.is_initialized()
