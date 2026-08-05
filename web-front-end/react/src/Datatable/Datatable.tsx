@@ -15,8 +15,11 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import SwapVertIcon from '@mui/icons-material/SwapVert';
 import * as socketModule from '../socket';
-import { GetPositions, GetTrades } from '../hooks';
+import { GetAccountSummary, GetPositions, GetTrades } from '../hooks';
 import { CreateAccount, CreateAccountUser, CreateTradeButton } from '../ActionButtons';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { PositionData, TradeData } from './types';
@@ -115,6 +118,7 @@ export const Datatable = () => {
 
 	const positionData = GetPositions(selectedId);
 	const tradeData = GetTrades(selectedId);
+	const summary = GetAccountSummary(selectedId, tradeRowData.length);
 
 	// Reset selection when tenant changes
 	useEffect(() => {
@@ -199,33 +203,33 @@ export const Datatable = () => {
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
 							title="Total Trades"
-							value={tradeRowData.length}
+							value={summary.totalTrades}
 							icon={<TrendingUpIcon sx={{ fontSize: 32 }} />}
 							color="#3b82f6"
 						/>
 					</Grid>
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
-							title="Total Positions"
-							value={positionRowData.length}
-							icon={<BarChartIcon sx={{ fontSize: 32 }} />}
-							color="#8b5cf6"
-						/>
-					</Grid>
-					<Grid item xs={12} sm={6} md={3}>
-						<StatCard
-							title="Account"
-							value={currentAccount ? `#${currentAccount}` : '--'}
-							icon={<AccountBalanceIcon sx={{ fontSize: 32 }} />}
+							title="Settled Trades"
+							value={summary.settledTrades}
+							icon={<CheckCircleIcon sx={{ fontSize: 32 }} />}
 							color="#10b981"
 						/>
 					</Grid>
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
-							title="Live Feed"
-							value="Active"
-							icon={<ShowChartIcon sx={{ fontSize: 32 }} />}
+							title="Pending Trades"
+							value={summary.pendingTrades}
+							icon={<HourglassEmptyIcon sx={{ fontSize: 32 }} />}
 							color="#f59e0b"
+						/>
+					</Grid>
+					<Grid item xs={12} sm={6} md={3}>
+						<StatCard
+							title="Net Quantity"
+							value={summary.netQuantity.toLocaleString()}
+							icon={<SwapVertIcon sx={{ fontSize: 32 }} />}
+							color="#8b5cf6"
 						/>
 					</Grid>
 				</Grid>
