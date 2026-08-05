@@ -9,7 +9,7 @@ import os
 import sentry_sdk
 import socketio
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import *  # noqa: F401,F403 — intentional global config import
@@ -127,8 +127,15 @@ def create_app() -> FastAPI:
 
     @app.get("/sentry-debug")
     async def trigger_error():
-        """Deliberately trigger an error for Sentry demo purposes."""
-        division_by_zero = 1 / 0  # noqa: F841
+        """Report a demo error to Sentry and return a handled 500 response."""
+        try:
+            division_by_zero = 1 / 0  # noqa: F841
+        except ZeroDivisionError as exc:
+            sentry_sdk.capture_exception(exc)
+            raise HTTPException(
+                status_code=500,
+                detail="Sentry demo error triggered",
+            ) from exc
 
     logger.info("FastAPI application created with all routes")
     return app
