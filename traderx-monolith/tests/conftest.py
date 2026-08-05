@@ -1,4 +1,11 @@
 """Shared test fixtures for TraderX monolith tests."""
+import os
+
+# Disable Sentry reporting during tests. app.main initializes the SDK from
+# SENTRY_DSN at import time, and an empty value (which load_dotenv will not
+# override) keeps test traffic out of the real Sentry project.
+os.environ["SENTRY_DSN"] = ""
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
