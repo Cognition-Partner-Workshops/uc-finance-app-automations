@@ -21,6 +21,7 @@ Resolved at runtime via the function being defined here and lazily imported ther
 """
 
 import logging
+import math
 import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
@@ -182,6 +183,76 @@ def validate_trade_request(db: Session, account_id: int, security: str,
 
     logger.info("Trade request validated successfully")
     return True, ""
+
+
+def validate_trade_order(db: Session, account_id: int, security: str,
+                         side: str, quantity: int, tenant_id: str,
+                         price: Optional[float] = None) -> Dict:
+    """
+    Validate a trade order without creating a trade or position.
+
+    Unlike the legacy validation flow, this collects every validation failure
+    so callers can correct all invalid fields in one request.
+    """
+    errors = []
+    warnings = []
+
+    if not validate_trade_side(side):
+        errors.append(
+            f"Invalid trade side: {side}. Must be 'Buy' or 'Sell'."
+        )
+
+    tenant_sides = TENANT_ALLOWED_SIDES.get(tenant_id, ["Buy", "Sell"])
+    if side not in tenant_sides:
+        errors.append(
+            f"Trade side '{side}' not allowed for tenant {tenant_id}. "
+            f"Allowed: {tenant_sides}"
+        )
+
+    if not validate_trade_quantity(quantity):
+        errors.append(
+            f"Invalid trade quantity: {quantity}. "
+            f"Must be between {MIN_TRADE_QUANTITY} and "
+            f"{MAX_TRADE_QUANTITY}."
+        )
+
+    account_exists = validate_account_exists(db, account_id, tenant_id)
+    if not account_exists:
+        errors.append(f"Account {account_id} not found for tenant {tenant_id}.")
+
+    stock = find_stock_by_ticker(security)
+    if stock is None:
+        errors.append(f"Security {security} not found in reference data.")
+
+    if price is not None and (not math.isfinite(price) or price <= 0):
+        errors.append(
+            f"Invalid trade price: {price}. Must be greater than 0."
+        )
+
+    if side == "Sell" and account_exists and stock is not None:
+        current_position = get_current_position_quantity(
+            db, account_id, security, tenant_id
+        )
+        if current_position < quantity:
+            warnings.append(
+                f"Sell quantity {quantity} exceeds current position "
+                f"{current_position} for account {account_id} security "
+                f"{security}."
+            )
+
+    result = {
+        "valid": not errors,
+        "errors": errors,
+        "warnings": warnings,
+    }
+    log_audit_event(
+        "TRADE_VALIDATION",
+        tenant_id,
+        f"account_id={account_id} security={security} side={side} "
+        f"quantity={quantity} valid={result['valid']} "
+        f"errors={len(errors)} warnings={len(warnings)}",
+    )
+    return result
 
 
 # =============================================================================

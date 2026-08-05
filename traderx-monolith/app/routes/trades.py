@@ -38,9 +38,33 @@ class TradeOrderRequest(BaseModel):
     quantity: int
 
 
+class TradeValidationRequest(BaseModel):
+    accountId: int
+    security: str
+    side: str
+    quantity: int
+    price: Optional[float] = None
+
+
 # =============================================================================
 # Trade Submission Endpoint
 # =============================================================================
+
+@router.post("/trade/validate")
+def validate_trade(body: TradeValidationRequest, request: Request,
+                   db: Session = Depends(get_db)):
+    """Validate a trade order without creating a trade or position."""
+    tenant_id = get_tenant_from_request(request)
+    return trade_processor.validate_trade_order(
+        db=db,
+        account_id=body.accountId,
+        security=body.security,
+        side=body.side,
+        quantity=body.quantity,
+        tenant_id=tenant_id,
+        price=body.price,
+    )
+
 
 @router.post("/trade/")
 async def submit_trade(body: TradeOrderRequest, request: Request,
