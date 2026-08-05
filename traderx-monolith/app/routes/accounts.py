@@ -9,7 +9,7 @@ SQLAlchemy queries — intentionally inconsistent (architectural smell).
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -119,6 +119,11 @@ def create_account_user(body: AccountUserCreate, request: Request,
 
     # Look up the person to record who is being granted access
     person = get_person(logon_id=body.username)
+    if person is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f'Person "{body.username}" not found'
+        )
     logger.info("Adding account user %s (%s) to account %d",
                 body.username, person.full_name, body.accountId)
 
