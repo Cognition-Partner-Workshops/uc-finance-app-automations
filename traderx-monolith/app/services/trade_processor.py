@@ -197,13 +197,14 @@ def validate_trade_order(db: Session, account_id: int, security: str,
     errors = []
     warnings = []
 
-    if not validate_trade_side(side):
+    side_valid = validate_trade_side(side)
+    if not side_valid:
         errors.append(
             f"Invalid trade side: {side}. Must be 'Buy' or 'Sell'."
         )
 
     tenant_sides = TENANT_ALLOWED_SIDES.get(tenant_id, ["Buy", "Sell"])
-    if side not in tenant_sides:
+    if side_valid and side not in tenant_sides:
         errors.append(
             f"Trade side '{side}' not allowed for tenant {tenant_id}. "
             f"Allowed: {tenant_sides}"
