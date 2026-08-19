@@ -7,9 +7,12 @@ import { useTenant } from '../TenantContext';
 export const GetAccountSummary = (accountId: number, refreshKey: number = 0) => {
 	const { tenant } = useTenant();
 	const [summary, setSummary] = useState<AccountSummary | null>(null);
+
+	// Drop the previous account's figures before the new ones arrive
+	useEffect(() => { setSummary(null); }, [accountId, tenant]);
+
 	useEffect(() => {
 		if (accountId === 0) {
-			setSummary(null);
 			return;
 		}
 		const abortController = new AbortController();
@@ -19,16 +22,15 @@ export const GetAccountSummary = (accountId: number, refreshKey: number = 0) => 
 					`${Environment.account_service_url}/account/${accountId}/summary`,
 					{ signal: abortController.signal }
 				);
-				if (response.ok) {
-					const json = await response.json();
-					if (!abortController.signal.aborted) {
-						setSummary(json);
-					}
+				if (abortController.signal.aborted) {
+					return;
 				}
+				setSummary(response.ok ? await response.json() : null);
 			} catch (error) {
 				if (error instanceof DOMException && error.name === 'AbortError') {
 					return; // Expected when effect is superseded
 				}
+				setSummary(null);
 				return error;
 			}
 		};
