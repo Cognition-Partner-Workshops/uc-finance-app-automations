@@ -150,6 +150,25 @@ def get_trade_count_for_account(db: Session, account_id: int,
     return count_trades_for_account(db, account_id, tenant_id)
 
 
+def get_account_summary(db: Session, account_id: int,
+                        tenant_id: str) -> Optional[dict]:
+    """
+    Get aggregated trade statistics for an account.
+    Delegates to the portfolio summary aggregation in trade_processor.
+    Returns None when the account does not exist for this tenant.
+    """
+    from app.services.trade_processor import get_account_portfolio_summary
+    summary = get_account_portfolio_summary(db, account_id, tenant_id)
+    if "error" in summary:
+        return None
+    return {
+        "accountId": account_id,
+        "displayName": summary["account"]["displayName"],
+        "totalPositions": len(summary["positions"]),
+        **summary["statistics"],
+    }
+
+
 def can_delete_account(db: Session, account_id: int, tenant_id: str) -> bool:
     """Check if an account can be deleted (no trades associated)."""
     trade_count = get_trade_count_for_account(db, account_id, tenant_id)
