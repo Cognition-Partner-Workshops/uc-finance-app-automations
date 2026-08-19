@@ -19,6 +19,7 @@ from app.models.account import Account, AccountUser
 from app.models.position import Position
 from app.services import account_service
 from app.services.people_service import validate_person
+from app.services.trade_processor import get_account_portfolio_summary
 from app.utils.helpers import get_tenant_from_request, log_audit_event
 
 logger = logging.getLogger(__name__)
@@ -97,6 +98,24 @@ def get_account(account_id: int, request: Request,
     result = account.to_dict()
     result["positions"] = [p.to_dict() for p in positions]
     return result
+
+
+@router.get("/account/{account_id}/summary")
+def get_account_summary(account_id: int, request: Request,
+                        db: Session = Depends(get_db)):
+    """Get aggregated trade statistics for an account."""
+    tenant_id = get_tenant_from_request(request)
+    account = account_service.get_account_by_id(db, account_id, tenant_id)
+    if account is None:
+        raise HTTPException(status_code=404,
+                            detail=f"Account {account_id} not found")
+
+    summary = get_account_portfolio_summary(db, account_id, tenant_id)
+    return {
+        "accountId": account_id,
+        "displayName": account.display_name,
+        "statistics": summary["statistics"],
+    }
 
 
 # =============================================================================
