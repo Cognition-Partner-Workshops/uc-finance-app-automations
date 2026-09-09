@@ -7,6 +7,11 @@ import { useTenant } from '../TenantContext';
 export const GetAccountSummary = (accountId: number, refreshKey: number = 0) => {
 	const { tenant } = useTenant();
 	const [summary, setSummary] = useState<AccountSummary | null>(null);
+	// Drop the previous account's statistics immediately so a slow or failed
+	// request never leaves another account's numbers on screen.
+	useEffect(() => {
+		setSummary(null);
+	}, [accountId, tenant]);
 	useEffect(() => {
 		if (accountId === 0) {
 			setSummary(null);
