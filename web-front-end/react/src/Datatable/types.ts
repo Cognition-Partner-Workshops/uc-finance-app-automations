@@ -17,3 +17,14 @@ export interface PositionData {
 	quantity: number;
 	updated: Date;
 }
+
+export interface AccountSummaryData {
+	accountId: number;
+	displayName: string;
+	totalTrades: number;
+	settledTrades: number;
+	pendingTrades: number;
+	totalBuyQuantity: number;
+	totalSellQuantity: number;
+	netQuantity: number;
+}
