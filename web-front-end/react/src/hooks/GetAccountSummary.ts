@@ -11,6 +11,11 @@ export const GetAccountSummary = (
 	const { tenant } = useTenant();
 	const [summary, setSummary] = useState<AccountSummary | null>(null);
 
+	// Clear stale data only when the account or tenant changes, not on live refreshes
+	useEffect(() => {
+		setSummary(null);
+	}, [accountId, tenant]);
+
 	useEffect(() => {
 		if (accountId === 0) {
 			setSummary(null);
@@ -18,7 +23,6 @@ export const GetAccountSummary = (
 		}
 
 		const abortController = new AbortController();
-		setSummary(null);
 		const fetchData = async () => {
 			try {
 				const response = await fetchWithTenant(
