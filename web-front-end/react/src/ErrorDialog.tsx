@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { API_ERROR_EVENT, ApiErrorDetail } from './fetchWithTenant';
+import { API_ERROR_EVENT, ApiErrorDetail } from './apiFetch';
 
 function parseMessage(body: string): string {
   if (!body) {

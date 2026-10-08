@@ -1,17 +1,8 @@
 /**
- * Wrapper around fetch that injects the X-Tenant-ID header.
+ * Wrapper around fetch that reports server errors and network failures via
+ * the API_ERROR_EVENT (consumed by ErrorDialog).
  * All API calls should use this instead of raw fetch().
  */
-let currentTenant = 'acme_corp';
-
-export function setCurrentTenant(tenant: string) {
-  currentTenant = tenant;
-}
-
-export function getCurrentTenant(): string {
-  return currentTenant;
-}
-
 export interface ApiErrorDetail {
   status: number;
   method: string;
@@ -34,15 +25,13 @@ function toEndpoint(input: RequestInfo | URL): string {
   }
 }
 
-export function fetchWithTenant(
+export function apiFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> {
-  const headers = new Headers(init?.headers);
-  headers.set('X-Tenant-ID', currentTenant);
   const method = (init?.method || 'GET').toUpperCase();
 
-  return fetch(input, { ...init, headers })
+  return fetch(input, init)
     .then((response) => {
       if (response.status >= 500) {
         response

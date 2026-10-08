@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { TradeData } from "../Datatable/types";
 import { Environment } from '../env';
-import { fetchWithTenant } from '../fetchWithTenant';
-import { useTenant } from '../TenantContext';
+import { apiFetch } from '../apiFetch';
 
 export const GetTrades = (accountId:number) => {
-	const { tenant } = useTenant();
 	const [tradesData, setTradesData] = useState<TradeData[]>([]);
 	useEffect(() => {
 		if (accountId === 0) {
@@ -15,7 +13,7 @@ export const GetTrades = (accountId:number) => {
 		const abortController = new AbortController();
 		const fetchData = async () => {
 			try {
-				const response = await fetchWithTenant(
+				const response = await apiFetch(
 					`${Environment.position_service_url}/trades/${accountId}`,
 					{ signal: abortController.signal }
 				);
@@ -34,6 +32,6 @@ export const GetTrades = (accountId:number) => {
 		};
 		fetchData();
 		return () => { abortController.abort(); };
-	}, [accountId, tenant]);
+	}, [accountId]);
 	return tradesData;
 }

@@ -15,13 +15,12 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
-import * as socketModule from '../socket';
+import { socket } from '../socket';
 import { GetPositions, GetTrades } from '../hooks';
 import { CreateAccount, CreateAccountUser, CreateTradeButton } from '../ActionButtons';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { PositionData, TradeData } from './types';
 import { AccountsDropdown } from '../AccountsDropdown';
-import { useTenant } from '../TenantContext';
 
 const PUBLISH = 'publish';
 const SUBSCRIBE = 'subscribe';
@@ -107,7 +106,6 @@ const StatCard = ({ title, value, icon, color }: StatCardProps) => (
 );
 
 export const Datatable = () => {
-	const { tenant } = useTenant();
 	const [tradeRowData, setTradeRowData] = useState<TradeData[]>([]);
 	const [positionRowData, setPositionRowData] = useState<PositionData[]>([]);
 	const [selectedId, setSelectedId] = useState<number>(0);
@@ -115,14 +113,6 @@ export const Datatable = () => {
 
 	const positionData = GetPositions(selectedId);
 	const tradeData = GetTrades(selectedId);
-
-	// Reset selection when tenant changes
-	useEffect(() => {
-		setSelectedId(0);
-		setCurrentAccount('');
-		setTradeRowData([]);
-		setPositionRowData([]);
-	}, [tenant]);
 
 	const tradeColumnDefs = useMemo<ColDef<TradeData>[]>(() => [
 		{ field: 'security', headerName: 'Security', flex: 1, minWidth: 100 },
@@ -145,18 +135,18 @@ export const Datatable = () => {
 	}), []);
 
 	const handleChange = useCallback((event: SelectChangeEvent<string>) => {
-		socketModule.socket.off(PUBLISH);
+		socket.off(PUBLISH);
 		if (selectedId !== 0) {
-			socketModule.socket.emit(UNSUBSCRIBE, `/accounts/${selectedId}/trades`);
-			socketModule.socket.emit(UNSUBSCRIBE, `/accounts/${selectedId}/positions`);
+			socket.emit(UNSUBSCRIBE, `/accounts/${selectedId}/trades`);
+			socket.emit(UNSUBSCRIBE, `/accounts/${selectedId}/positions`);
 		}
 		const numericId = event.target.value ? Number(event.target.value) : 0;
 		setSelectedId(numericId);
 		setCurrentAccount(event.target.value);
 		if (event.target.value) {
-			socketModule.socket.emit(SUBSCRIBE, `/accounts/${event.target.value}/trades`);
-			socketModule.socket.emit(SUBSCRIBE, `/accounts/${event.target.value}/positions`);
-			socketModule.socket.on(PUBLISH, (data: { topic: string; payload: TradeData | PositionData }) => {
+			socket.emit(SUBSCRIBE, `/accounts/${event.target.value}/trades`);
+			socket.emit(SUBSCRIBE, `/accounts/${event.target.value}/positions`);
+			socket.on(PUBLISH, (data: { topic: string; payload: TradeData | PositionData }) => {
 				if (data.topic === `/accounts/${event.target.value}/trades`) {
 					setTradeRowData((current: TradeData[]) => [...current, data.payload as TradeData]);
 				}

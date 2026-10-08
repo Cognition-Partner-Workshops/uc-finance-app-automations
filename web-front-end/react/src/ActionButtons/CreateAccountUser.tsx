@@ -16,7 +16,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { ActionButtonsProps } from './types';
 import { Environment } from '../env';
-import { fetchWithTenant } from '../fetchWithTenant';
+import { apiFetch } from '../apiFetch';
 
 interface PersonOption {
 	logonId: string;
@@ -52,7 +52,7 @@ export const CreateAccountUser = ({ accountId }: ActionButtonsProps) => {
 		}
 		setSearching(true);
 		try {
-			const response = await fetchWithTenant(
+			const response = await apiFetch(
 				`${Environment.people_service_url}/people/GetMatchingPeople?SearchText=${encodeURIComponent(text)}`
 			);
 			const result = await response.json();
@@ -74,7 +74,7 @@ export const CreateAccountUser = ({ accountId }: ActionButtonsProps) => {
 		if (!username) return;
 		setSubmitting(true);
 		try {
-			const response = await fetchWithTenant(`${Environment.account_service_url}/accountuser/`, {
+			const response = await apiFetch(`${Environment.account_service_url}/accountuser/`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
