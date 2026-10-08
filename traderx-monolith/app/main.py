@@ -13,7 +13,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import *  # noqa: F401,F403 — intentional global config import
-from app.middleware import TenantMiddleware
 from app.routes import accounts, trades, positions, people, reference_data, analytics
 from app.services.trade_processor import set_socketio_server
 
@@ -101,9 +100,6 @@ def create_app() -> FastAPI:
         allow_methods=CORS_ALLOW_METHODS,
         allow_headers=CORS_ALLOW_HEADERS,
     )
-
-    # Tenant middleware
-    app.add_middleware(TenantMiddleware)
 
     # Include routers
     app.include_router(accounts.router, tags=["Accounts"])

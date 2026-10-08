@@ -11,7 +11,7 @@ intentionally inconsistent (architectural smell).
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
@@ -20,7 +20,6 @@ from app.config import *  # noqa: F401,F403 — intentional global config import
 from app.database import get_db
 from app.models.trade import Trade
 from app.services import trade_processor
-from app.utils.helpers import get_tenant_from_request
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +42,12 @@ class TradeOrderRequest(BaseModel):
 # =============================================================================
 
 @router.post("/trade/")
-async def submit_trade(body: TradeOrderRequest, request: Request,
-                       db: Session = Depends(get_db)):
+async def submit_trade(body: TradeOrderRequest, db: Session = Depends(get_db)):
     """
     Submit a new trade order.
     Processes the trade synchronously (in-process) instead of publishing
     to a message queue like the original microservice architecture.
     """
-    tenant_id = get_tenant_from_request(request)
-
     logger.info("Trade order received: account=%d security=%s side=%s qty=%d",
                 body.accountId, body.security, body.side, body.quantity)
 
@@ -61,7 +57,6 @@ async def submit_trade(body: TradeOrderRequest, request: Request,
         security=body.security,
         side=body.side,
         quantity=body.quantity,
-        tenant_id=tenant_id,
     )
 
     if not result["success"]:
@@ -75,28 +70,22 @@ async def submit_trade(body: TradeOrderRequest, request: Request,
 # =============================================================================
 
 @router.get("/trades/")
-def list_all_trades(request: Request, db: Session = Depends(get_db)):
+def list_all_trades(db: Session = Depends(get_db)):
     """
-    Get all trades for the current tenant.
+    Get all trades.
     Uses raw SQLAlchemy query inline — bypasses service layer (intentional smell).
     """
-    tenant_id = get_tenant_from_request(request)
-
     # Inline query — intentionally not using trade_processor.get_all_trades()
-    trades = db.query(Trade).filter(
-        Trade.tenant_id == tenant_id
-    ).order_by(desc(Trade.created)).all()
+    trades = db.query(Trade).order_by(desc(Trade.created)).all()
 
     return [t.to_dict() for t in trades]
 
 
 @router.get("/trades/{account_id}")
-def list_trades_by_account(account_id: int, request: Request,
-                           db: Session = Depends(get_db)):
+def list_trades_by_account(account_id: int, db: Session = Depends(get_db)):
     """
     Get all trades for a specific account.
     This one uses the service layer — intentionally inconsistent with list_all_trades.
     """
-    tenant_id = get_tenant_from_request(request)
-    trades = trade_processor.get_trades_for_account(db, account_id, tenant_id)
+    trades = trade_processor.get_trades_for_account(db, account_id)
     return [t.to_dict() for t in trades]

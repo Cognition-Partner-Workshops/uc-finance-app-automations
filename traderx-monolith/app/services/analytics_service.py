@@ -15,9 +15,9 @@ from app.config import *  # noqa: F401,F403 — intentional global config import
 logger = logging.getLogger(__name__)
 
 
-def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
+def get_trade_statistics(db: Session) -> Dict[str, Any]:
     """
-    Get comprehensive trade statistics for a tenant.
+    Get comprehensive trade statistics.
     
     Returns aggregated metrics including:
     - Total trades
@@ -27,8 +27,7 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
     - Trade counts by security
     - Recent trade activity (last 7 days)
     """
-    # Base query for tenant-specific trades
-    base_query = db.query(Trade).filter(Trade.tenant_id == tenant_id)
+    base_query = db.query(Trade)
     
     # Total trades
     total_trades = base_query.count()
@@ -49,9 +48,7 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
         }
     
     # Average quantity
-    avg_quantity = db.query(func.avg(Trade.quantity)).filter(
-        Trade.tenant_id == tenant_id
-    ).scalar() or 0
+    avg_quantity = db.query(func.avg(Trade.quantity)).scalar() or 0
     
     # Buy vs Sell counts
     buy_count = base_query.filter(Trade.side == "Buy").count()
@@ -61,7 +58,6 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
     # Trade counts by state
     trades_by_state = dict(
         db.query(Trade.state, func.count(Trade.id))
-        .filter(Trade.tenant_id == tenant_id)
         .group_by(Trade.state)
         .all()
     )
@@ -69,7 +65,6 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
     # Trade counts by security (top 10)
     trades_by_security = dict(
         db.query(Trade.security, func.count(Trade.id))
-        .filter(Trade.tenant_id == tenant_id)
         .group_by(Trade.security)
         .order_by(func.count(Trade.id).desc())
         .limit(10)
@@ -95,22 +90,18 @@ def get_trade_statistics(db: Session, tenant_id: str) -> Dict[str, Any]:
         }
     }
     
-    logger.info("Generated trade statistics for tenant %s: %d total trades", 
-                tenant_id, total_trades)
+    logger.info("Generated trade statistics: %d total trades", total_trades)
     return statistics
 
 
-def get_account_trade_statistics(db: Session, account_id: int, tenant_id: str) -> Dict[str, Any]:
+def get_account_trade_statistics(db: Session, account_id: int) -> Dict[str, Any]:
     """
-    Get trade statistics for a specific account within a tenant.
+    Get trade statistics for a specific account.
     
     Returns account-specific trade metrics.
     """
     # Base query for account-specific trades
-    base_query = db.query(Trade).filter(
-        Trade.tenant_id == tenant_id,
-        Trade.account_id == account_id
-    )
+    base_query = db.query(Trade).filter(Trade.account_id == account_id)
     
     # Total trades for account
     total_trades = base_query.count()
@@ -128,7 +119,6 @@ def get_account_trade_statistics(db: Session, account_id: int, tenant_id: str) -
     
     # Average quantity
     avg_quantity = db.query(func.avg(Trade.quantity)).filter(
-        Trade.tenant_id == tenant_id,
         Trade.account_id == account_id
     ).scalar() or 0
     
@@ -139,10 +129,7 @@ def get_account_trade_statistics(db: Session, account_id: int, tenant_id: str) -
     # Trade counts by state
     trades_by_state = dict(
         db.query(Trade.state, func.count(Trade.id))
-        .filter(
-            Trade.tenant_id == tenant_id,
-            Trade.account_id == account_id
-        )
+        .filter(Trade.account_id == account_id)
         .group_by(Trade.state)
         .all()
     )
@@ -150,10 +137,7 @@ def get_account_trade_statistics(db: Session, account_id: int, tenant_id: str) -
     # Trade counts by security
     trades_by_security = dict(
         db.query(Trade.security, func.count(Trade.id))
-        .filter(
-            Trade.tenant_id == tenant_id,
-            Trade.account_id == account_id
-        )
+        .filter(Trade.account_id == account_id)
         .group_by(Trade.security)
         .all()
     )
@@ -168,6 +152,6 @@ def get_account_trade_statistics(db: Session, account_id: int, tenant_id: str) -
         "tradesBySecurity": trades_by_security
     }
     
-    logger.info("Generated trade statistics for account %d tenant %s: %d total trades", 
-                account_id, tenant_id, total_trades)
+    logger.info("Generated trade statistics for account %d: %d total trades", 
+                account_id, total_trades)
     return statistics

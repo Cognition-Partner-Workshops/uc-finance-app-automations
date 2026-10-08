@@ -14,7 +14,6 @@ class Trade(Base):
     __tablename__ = "trades"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    tenant_id = Column(String(50), nullable=False, default=DEFAULT_TENANT)
     account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
     security = Column(String(50), nullable=False)
     side = Column(String(4), nullable=False)  # Buy or Sell
@@ -26,7 +25,6 @@ class Trade(Base):
     def to_dict(self):
         return {
             "id": self.id,
-            "tenant_id": self.tenant_id,
             "accountId": self.account_id,
             "security": self.security,
             "side": self.side,

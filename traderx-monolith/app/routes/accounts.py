@@ -9,7 +9,7 @@ SQLAlchemy queries — intentionally inconsistent (architectural smell).
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ from app.models.account import Account, AccountUser
 from app.models.position import Position
 from app.services import account_service
 from app.services.people_service import validate_person
-from app.utils.helpers import get_tenant_from_request, log_audit_event
+from app.utils.helpers import log_audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -45,45 +45,34 @@ class AccountUserCreate(BaseModel):
 # =============================================================================
 
 @router.get("/account/")
-def list_accounts(request: Request, db: Session = Depends(get_db)):
-    """List all accounts for the current tenant."""
-    tenant_id = get_tenant_from_request(request)
-    accounts = account_service.get_all_accounts(db, tenant_id)
+def list_accounts(db: Session = Depends(get_db)):
+    """List all accounts."""
+    accounts = account_service.get_all_accounts(db)
     return [a.to_dict() for a in accounts]
 
 
 @router.post("/account/")
-def create_account(body: AccountCreate, request: Request,
-                   db: Session = Depends(get_db)):
+def create_account(body: AccountCreate, db: Session = Depends(get_db)):
     """Create a new account."""
-    tenant_id = get_tenant_from_request(request)
-    account = account_service.upsert_account(
-        db, body.id, body.displayName, tenant_id
-    )
+    account = account_service.upsert_account(db, body.id, body.displayName)
     return account.to_dict()
 
 
 @router.put("/account/")
-def update_account(body: AccountCreate, request: Request,
-                   db: Session = Depends(get_db)):
+def update_account(body: AccountCreate, db: Session = Depends(get_db)):
     """Update an existing account."""
-    tenant_id = get_tenant_from_request(request)
-    account = account_service.upsert_account(
-        db, body.id, body.displayName, tenant_id
-    )
+    account = account_service.upsert_account(db, body.id, body.displayName)
     return account.to_dict()
 
 
 @router.get("/account/{account_id}")
-def get_account(account_id: int, request: Request,
-                db: Session = Depends(get_db)):
+def get_account(account_id: int, db: Session = Depends(get_db)):
     """
     Get account by ID with portfolio summary.
     NOTE: This endpoint directly queries the positions table — cross-domain
     query intentional smell (bypasses service layer).
     """
-    tenant_id = get_tenant_from_request(request)
-    account = account_service.get_account_by_id(db, account_id, tenant_id)
+    account = account_service.get_account_by_id(db, account_id)
     if account is None:
         raise HTTPException(status_code=404,
                             detail=f"Account {account_id} not found")
@@ -91,7 +80,6 @@ def get_account(account_id: int, request: Request,
     # Cross-domain query: directly query positions table for portfolio summary
     positions = db.query(Position).filter(
         Position.account_id == account_id,
-        Position.tenant_id == tenant_id,
     ).all()
 
     result = account.to_dict()
@@ -104,22 +92,19 @@ def get_account(account_id: int, request: Request,
 # =============================================================================
 
 @router.get("/accountuser/")
-def list_account_users(request: Request, db: Session = Depends(get_db)):
-    """List all account users for the current tenant."""
-    tenant_id = get_tenant_from_request(request)
-    users = account_service.get_all_account_users(db, tenant_id)
+def list_account_users(db: Session = Depends(get_db)):
+    """List all account users."""
+    users = account_service.get_all_account_users(db)
     return [u.to_dict() for u in users]
 
 
 @router.post("/accountuser/")
-def create_account_user(body: AccountUserCreate, request: Request,
+def create_account_user(body: AccountUserCreate,
                         db: Session = Depends(get_db)):
     """
     Create a new account user.
     Validates the person against the people service first.
     """
-    tenant_id = get_tenant_from_request(request)
-
     # Validate person exists in people service
     if not validate_person(logon_id=body.username):
         raise HTTPException(
@@ -128,17 +113,16 @@ def create_account_user(body: AccountUserCreate, request: Request,
         )
 
     user = account_service.upsert_account_user(
-        db, body.accountId, body.username, tenant_id
+        db, body.accountId, body.username
     )
     return user.to_dict()
 
 
 @router.put("/accountuser/")
-def update_account_user(body: AccountUserCreate, request: Request,
+def update_account_user(body: AccountUserCreate,
                         db: Session = Depends(get_db)):
     """Update an account user."""
-    tenant_id = get_tenant_from_request(request)
     user = account_service.upsert_account_user(
-        db, body.accountId, body.username, tenant_id
+        db, body.accountId, body.username
     )
     return user.to_dict()

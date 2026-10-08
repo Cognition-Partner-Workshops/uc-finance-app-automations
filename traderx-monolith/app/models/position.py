@@ -14,7 +14,6 @@ class Position(Base):
     __tablename__ = "positions"
 
     account_id = Column(Integer, ForeignKey("accounts.id"), primary_key=True)
-    tenant_id = Column(String(50), primary_key=True, default=DEFAULT_TENANT)
     security = Column(String(50), primary_key=True)
     quantity = Column(Integer, nullable=False, default=0)
     updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -22,7 +21,6 @@ class Position(Base):
     def to_dict(self):
         return {
             "accountId": self.account_id,
-            "tenant_id": self.tenant_id,
             "security": self.security,
             "quantity": self.quantity,
             "updated": self.updated.isoformat() if self.updated else None,
