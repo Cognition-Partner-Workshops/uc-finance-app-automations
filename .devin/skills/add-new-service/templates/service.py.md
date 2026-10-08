@@ -25,40 +25,33 @@ logger = logging.getLogger(__name__)
 # <Domain> CRUD
 # =============================================================================
 
-def get_<domain>_by_id(db: Session, <domain>_id: int, tenant_id: str) -> Optional[<Domain>]:
-    """Get a single <domain> by ID and tenant."""
+def get_<domain>_by_id(db: Session, <domain>_id: int) -> Optional[<Domain>]:
+    """Get a single <domain> by ID."""
     return db.query(<Domain>).filter(
         <Domain>.id == <domain>_id,
-        <Domain>.tenant_id == tenant_id,
     ).first()
 
 
-def get_all_<domain>s(db: Session, tenant_id: str) -> List[<Domain>]:
-    """Get all <domain>s for a tenant."""
-    return db.query(<Domain>).filter(
-        <Domain>.tenant_id == tenant_id,
-    ).all()
+def get_all_<domain>s(db: Session) -> List[<Domain>]:
+    """Get all <domain>s."""
+    return db.query(<Domain>).all()
 
 
-def create_<domain>(db: Session, tenant_id: str, **kwargs) -> <Domain>:
+def create_<domain>(db: Session, **kwargs) -> <Domain>:
     """Create a new <domain>."""
-    item = <Domain>(
-        tenant_id=tenant_id,
-        **kwargs,
-    )
+    item = <Domain>(**kwargs)
     db.add(item)
     db.commit()
     db.refresh(item)
-    log_audit_event("<DOMAIN>_CREATED", tenant_id,
-                    f"<domain>_id={item.id}")
-    logger.info("Created <domain> %d for tenant %s", item.id, tenant_id)
+    log_audit_event("<DOMAIN>_CREATED", f"<domain>_id={item.id}")
+    logger.info("Created <domain> %d", item.id)
     return item
 
 
-def update_<domain>(db: Session, <domain>_id: int, tenant_id: str,
+def update_<domain>(db: Session, <domain>_id: int,
                     **kwargs) -> Optional[<Domain>]:
     """Update an existing <domain>."""
-    item = get_<domain>_by_id(db, <domain>_id, tenant_id)
+    item = get_<domain>_by_id(db, <domain>_id)
     if item is None:
         return None
 
@@ -67,16 +60,14 @@ def update_<domain>(db: Session, <domain>_id: int, tenant_id: str,
 
     db.commit()
     db.refresh(item)
-    log_audit_event("<DOMAIN>_UPDATED", tenant_id,
-                    f"<domain>_id={item.id}")
-    logger.info("Updated <domain> %d for tenant %s", item.id, tenant_id)
+    log_audit_event("<DOMAIN>_UPDATED", f"<domain>_id={item.id}")
+    logger.info("Updated <domain> %d", item.id)
     return item
 ```
 
 ## Notes
 
-- **Every function** takes `db: Session` and `tenant_id: str` as the first two arguments
-- **Always filter by `tenant_id`** — never return data across tenants
+- **Every function** takes `db: Session` as the first argument
 - **Use `log_audit_event()`** for all state-changing operations (create, update, delete)
 - **Use `logger.info()`** for operational logging
 - **Do NOT import models from other domains** — if you need cross-domain data, call the other domain's service functions. This avoids the circular dependency problem in `account_service.py ↔ trade_processor.py`

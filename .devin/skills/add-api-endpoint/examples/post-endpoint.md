@@ -13,13 +13,9 @@ class AccountCreate(BaseModel):
 
 
 @router.post("/account/")
-def create_account(body: AccountCreate, request: Request,
-                   db: Session = Depends(get_db)):
+def create_account(body: AccountCreate, db: Session = Depends(get_db)):
     """Create a new account."""
-    tenant_id = get_tenant_from_request(request)
-    account = account_service.upsert_account(
-        db, body.id, body.displayName, tenant_id
-    )
+    account = account_service.upsert_account(db, body.id, body.displayName)
     return account.to_dict()
 ```
 
@@ -34,14 +30,12 @@ Based on the account user creation pattern — validates against the people serv
 
 ```python
 @router.post("/accountuser/")
-def create_account_user(body: AccountUserCreate, request: Request,
+def create_account_user(body: AccountUserCreate,
                         db: Session = Depends(get_db)):
     """
     Create a new account user.
     Validates the person against the people service first.
     """
-    tenant_id = get_tenant_from_request(request)
-
     # Validate against another service first
     if not validate_person(logon_id=body.username):
         raise HTTPException(
@@ -50,7 +44,7 @@ def create_account_user(body: AccountUserCreate, request: Request,
         )
 
     user = account_service.upsert_account_user(
-        db, body.accountId, body.username, tenant_id
+        db, body.accountId, body.username
     )
     return user.to_dict()
 ```
@@ -66,13 +60,11 @@ Based on the trade submission pattern — returns a richer response object:
 
 ```python
 @router.post("/trade/")
-def submit_trade(body: TradeRequest, request: Request,
-                 db: Session = Depends(get_db)):
+def submit_trade(body: TradeRequest, db: Session = Depends(get_db)):
     """Submit a new trade order."""
-    tenant_id = get_tenant_from_request(request)
     result = trade_processor.process_trade(
         db, body.accountId, body.security,
-        body.side, body.quantity, tenant_id
+        body.side, body.quantity
     )
     return result  # Returns {"success": True, "trade": {...}, "position": {...}}
 ```
@@ -80,4 +72,4 @@ def submit_trade(body: TradeRequest, request: Request,
 **Key points:**
 - Complex business logic lives in the service layer (`process_trade`)
 - The service returns a structured dict, not just a model
-- The route handler stays thin — just extracts tenant and delegates
+- The route handler stays thin — just validates the body and delegates

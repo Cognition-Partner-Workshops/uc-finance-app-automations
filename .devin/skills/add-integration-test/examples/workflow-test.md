@@ -62,39 +62,6 @@ def test_trade_creates_position(client):
 2. Query a downstream resource (positions)
 3. Assert the side effects are correct
 
-## Multi-tenant workflow isolation
-
-```python
-def test_trade_tenant_isolation(client):
-    """Trades in one tenant should not affect another tenant's data."""
-    # Create account in tenant A
-    acct_a = client.post("/account/", json={"displayName": "Acme Trading"},
-                         headers={"X-Tenant-ID": "acme_corp"})
-    account_id_a = acct_a.json()["id"]
-
-    # Submit trade in tenant A
-    client.post("/trade/", json={
-        "accountId": account_id_a,
-        "security": "AAPL",
-        "side": "Buy",
-        "quantity": 100,
-    }, headers={"X-Tenant-ID": "acme_corp"})
-
-    # Tenant B should see no trades
-    resp = client.get("/trades/", headers={"X-Tenant-ID": "globex_inc"})
-    assert resp.status_code == 200
-    assert resp.json() == []
-
-    # Tenant A should see the trade
-    resp_a = client.get("/trades/", headers={"X-Tenant-ID": "acme_corp"})
-    assert len(resp_a.json()) >= 1
-```
-
-**Pattern:**
-1. Perform writes in tenant A (with `X-Tenant-ID` header)
-2. Query in tenant B — should see nothing
-3. Query in tenant A — should see the data
-
 ## Tips for workflow tests
 
 - **Always create prerequisites in the test** — don't rely on seed data (the test DB starts empty)

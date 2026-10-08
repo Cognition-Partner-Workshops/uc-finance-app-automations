@@ -1,6 +1,6 @@
 ---
 name: api-contract-reviewer
-description: Reviews TraderX API endpoints for contract consistency — naming conventions, error handling, response shapes, tenant isolation, and OpenAPI alignment. Read-only — produces a contract compliance report.
+description: Reviews TraderX API endpoints for contract consistency — naming conventions, error handling, response shapes, and OpenAPI alignment. Read-only — produces a contract compliance report.
 allowed-tools:
   - read
   - grep
@@ -39,26 +39,19 @@ For each endpoint, verify:
 - Check for bare `except:` or swallowed exceptions
 - Verify error messages don't leak internal details (stack traces, SQL)
 
-### 4. Tenant Isolation on Every Endpoint
-- Every endpoint must call `get_tenant_from_request(request)`
-- Every service call must pass `tenant_id`
-- No endpoint should return data from other tenants
-- Flag any endpoint that queries the DB without tenant filtering
-
-### 5. Input Validation
+### 4. Input Validation
 - POST/PUT endpoints should use Pydantic request models
 - Check for endpoints that read `request.json()` directly without validation
 - Verify Pydantic models enforce field constraints (types, lengths, enums)
 
-### 6. Audit Logging
+### 5. Audit Logging
 - State-changing operations (POST, PUT, DELETE) should call `log_audit_event()`
-- Verify audit events include tenant_id, entity type, action, and entity ID
+- Verify audit events include entity type, action, and entity ID
 
 ## How to Investigate
 
 - `glob` for all route files: `traderx-monolith/app/routes/*.py`
 - `grep` for route definitions: `@router.get|post|put|delete`
-- `grep` for tenant extraction: `get_tenant_from_request`
 - `grep` for audit logging: `log_audit_event`
 - `grep` for error handling: `HTTPException|raise|except`
 - `read` each route file fully to check all patterns
@@ -74,11 +67,11 @@ For each endpoint, verify:
 - Issues found: Y
 
 ## Endpoint Inventory
-| Method | Path | Route File | Tenant Check | Validation | Audit Log | Status |
-|--------|------|-----------|--------------|------------|-----------|--------|
-| GET | /account/ | accounts.py | Yes | N/A | N/A | OK |
-| POST | /trade/ | trades.py | Yes | Pydantic | Yes | OK |
-| ... | ... | ... | ... | ... | ... | ... |
+| Method | Path | Route File | Validation | Audit Log | Status |
+|--------|------|-----------|------------|-----------|--------|
+| GET | /account/ | accounts.py | N/A | N/A | OK |
+| POST | /trade/ | trades.py | Pydantic | Yes | OK |
+| ... | ... | ... | ... | ... | ... |
 
 ## Issues
 
@@ -86,8 +79,8 @@ For each endpoint, verify:
 - `trades.py:45` — POST /trade/ returns wrapped `{"trade": ...}` instead of flat object
 - All other POST endpoints return the object directly
 
-### [Security] Missing tenant check
-- `positions.py:22` — GET /position/ does not filter by tenant_id
+### [Error Handling] Missing 404 on lookup
+- `positions.py:22` — GET /positions/{account_id} returns `[]` for an unknown account instead of 404
 
 (repeat for each issue)
 

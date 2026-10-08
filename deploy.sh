@@ -13,7 +13,6 @@ cd traderx-monolith
 python -c "from app.database import create_tables; create_tables(); from app.seed import seed_database; seed_database()"
 
 # Start the application
-export DEFAULT_TENANT=acme_corp
 python run.py &
 
 # Start the frontend

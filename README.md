@@ -1,6 +1,6 @@
 # TraderX — Legacy Trading Platform
 
-A multi-tenant trading platform built as a Python/FastAPI monolith. Supports account management, trade submission, position tracking, and real-time updates via Socket.io. Uses SQLite for storage with 3 demo tenants (`acme_corp`, `globex_inc`, `initech`).
+A trading platform built as a Python/FastAPI monolith. Supports account management, trade submission, position tracking, and real-time updates via Socket.io. Uses SQLite for storage and ships with demo seed data.
 
 [![CI](https://github.com/mbatchelor81/traderXCognitiondemos/actions/workflows/ci.yml/badge.svg)](https://github.com/mbatchelor81/traderXCognitiondemos/actions/workflows/ci.yml)
 
@@ -92,7 +92,7 @@ Any uncaught 500 from the app (e.g. the demo flows in the UI) will now show up a
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/account/` | List all accounts for the current tenant |
+| `GET` | `/account/` | List all accounts |
 | `POST` | `/account/` | Create a new account |
 | `PUT` | `/account/` | Update an existing account |
 | `GET` | `/account/{account_id}` | Get account by ID with portfolio summary |
@@ -100,9 +100,9 @@ Any uncaught 500 from the app (e.g. the demo flows in the UI) will now show up a
 | `POST` | `/accountuser/` | Create a new account user |
 | `PUT` | `/accountuser/` | Update an account user |
 | `POST` | `/trade/` | Submit a new trade order |
-| `GET` | `/trades/` | List all trades for the current tenant |
+| `GET` | `/trades/` | List all trades |
 | `GET` | `/trades/{account_id}` | List trades for a specific account |
-| `GET` | `/positions/` | List all positions for the current tenant |
+| `GET` | `/positions/` | List all positions |
 | `GET` | `/positions/{account_id}` | List positions for a specific account |
 | `GET` | `/stocks/` | List all S&P 500 stocks |
 | `GET` | `/stocks/{ticker}` | Get stock by ticker symbol |
@@ -110,30 +110,6 @@ Any uncaught 500 from the app (e.g. the demo flows in the UI) will now show up a
 | `GET` | `/people/GetMatchingPeople` | Search for people matching text |
 | `GET` | `/people/ValidatePerson` | Validate that a person exists |
 | `GET` | `/health` | Health check |
-
----
-
-## Multi-Tenant
-
-TraderX supports multiple tenants via the `X-Tenant-ID` HTTP header. If the header is not provided, the default tenant (`acme_corp`) is used.
-
-### Available Tenants
-
-| Tenant ID | Description |
-|---|---|
-| `acme_corp` | 2 accounts, 8 trades, 7 positions |
-| `globex_inc` | 2 accounts, 5 trades, 5 positions |
-| `initech` | 3 accounts, 8 trades, 7 positions |
-
-### Example
-
-```bash
-# List accounts for the default tenant (acme_corp)
-curl http://localhost:8000/account/
-
-# List accounts for a specific tenant
-curl -H "X-Tenant-ID: globex_inc" http://localhost:8000/account/
-```
 
 ---
 

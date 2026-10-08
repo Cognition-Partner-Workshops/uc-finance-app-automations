@@ -1,6 +1,6 @@
 ---
 name: add-integration-test
-description: Guides writing integration tests for TraderX API endpoints. Use when adding tests for new or existing endpoints — covers test fixtures, multi-tenant testing, CRUD tests, workflow tests, and error case testing.
+description: Guides writing integration tests for TraderX API endpoints. Use when adding tests for new or existing endpoints — covers test fixtures, CRUD tests, workflow tests, and error case testing.
 ---
 
 # Add Integration Test
@@ -61,24 +61,9 @@ For each endpoint, write tests covering:
 | **List empty** | GET when no data exists | 200 + `[]` |
 | **Not found** | GET with non-existent ID | 404 |
 | **Validation** | POST with missing required field | 422 |
-| **Multi-tenant** | Create in tenant A, query in tenant B | Not visible |
 | **Workflow** | Create → Update → Verify | Each step correct |
 
-### 5. Multi-tenant testing
-
-Pass the `X-Tenant-ID` header to test tenant isolation:
-
-```python
-# Create in tenant A
-client.post("/account/", json={"displayName": "Acme"},
-            headers={"X-Tenant-ID": "acme_corp"})
-
-# Should NOT be visible in tenant B
-resp = client.get("/account/", headers={"X-Tenant-ID": "globex_inc"})
-assert resp.json() == []
-```
-
-### 6. Run tests
+### 5. Run tests
 
 ```bash
 cd traderx-monolith && python -m pytest tests/ -v

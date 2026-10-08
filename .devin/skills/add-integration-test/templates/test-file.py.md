@@ -93,29 +93,10 @@ def test_update_<domain>_not_found(client):
     })
     assert resp.status_code == 404
 
-
-# =============================================================================
-# Multi-Tenant Isolation
-# =============================================================================
-
-def test_<domain>_tenant_isolation(client):
-    """Test that <domain>s in one tenant are not visible in another."""
-    # Create in tenant A
-    client.post("/<domain>/", json={"fieldName": "Tenant A Item"},
-                headers={"X-Tenant-ID": "acme_corp"})
-
-    # Should not be visible in tenant B
-    resp = client.get("/<domain>/", headers={"X-Tenant-ID": "globex_inc"})
-    assert resp.json() == []
-
-    # Should be visible in tenant A
-    resp = client.get("/<domain>/", headers={"X-Tenant-ID": "acme_corp"})
-    assert len(resp.json()) == 1
 ```
 
 ## Notes
 
 - **Each test starts with an empty database** — the `conftest.py` autouse fixture creates/drops tables per test
 - **No imports needed for fixtures** — `client` is auto-discovered by pytest from `conftest.py`
-- **Multi-tenant tests** use the `X-Tenant-ID` header; without it, the default tenant (`acme_corp`) is used
 - **Pydantic validation errors** return HTTP 422, not 400

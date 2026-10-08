@@ -11,7 +11,7 @@ This skill walks through adding structured logging, health check endpoints, and 
 
 The current codebase uses basic `logging.getLogger(__name__)` with unstructured text messages. The target architecture ([TARGET_ARCHITECTURE_CONSTRAINTS.md](../../../TARGET_ARCHITECTURE_CONSTRAINTS.md) §10) requires:
 
-- **Structured JSON logs** with correlation IDs, tenant IDs, and request IDs
+- **Structured JSON logs** with correlation IDs and request IDs
 - **Health check endpoints** with dependency checks (DB connectivity)
 - **Request/response metrics** (latency, status codes)
 
@@ -27,7 +27,7 @@ Replace the basic logging setup with structured JSON output. See [templates/stru
 # BEFORE (current pattern)
 import logging
 logger = logging.getLogger(__name__)
-logger.info("Created account %d for tenant %s", account.id, tenant_id)
+logger.info("Created account %d", account.id)
 
 # AFTER (structured pattern)
 import logging
@@ -35,20 +35,19 @@ from app.utils.logging_config import get_logger
 logger = get_logger(__name__)
 logger.info("account_created", extra={
     "account_id": account.id,
-    "tenant_id": tenant_id,
 })
 ```
 
 The structured logger emits JSON lines:
 ```json
-{"timestamp": "2025-01-15T10:30:00Z", "level": "INFO", "logger": "app.services.account_service", "message": "account_created", "account_id": 42, "tenant_id": "acme_corp", "correlation_id": "abc-123"}
+{"timestamp": "2025-01-15T10:30:00Z", "level": "INFO", "logger": "app.services.account_service", "message": "account_created", "account_id": 42, "correlation_id": "abc-123"}
 ```
 
 ### 2. Add correlation ID middleware
 
 Add middleware that generates or extracts a correlation ID per request and makes it available to all log statements. This enables tracing a single request across all log lines.
 
-Add to `app/middleware.py` alongside the existing `TenantMiddleware`:
+Add to `app/middleware.py` (create the module if it does not exist):
 
 ```python
 import uuid
@@ -103,7 +102,7 @@ class RequestTimingMiddleware(BaseHTTPMiddleware):
             "path": request.url.path,
             "status_code": response.status_code,
             "duration_ms": round(duration_ms, 2),
-            "tenant_id": getattr(request.state, "tenant_id", None),
+            "correlation_id": getattr(request.state, "correlation_id", None),
         })
         return response
 ```
@@ -113,7 +112,7 @@ class RequestTimingMiddleware(BaseHTTPMiddleware):
 For each service module, convert existing `logger.info()` calls to the structured format. See [examples/logging-examples.md](examples/logging-examples.md) for before/after examples from the real codebase.
 
 **Key fields to include in every log line:**
-- `tenant_id` — always present for tenant-scoped operations
+- `correlation_id` — propagated from the request so one request's log lines can be grouped
 - `entity_id` — the ID of the resource being operated on (account_id, trade_id, etc.)
 - `action` — what happened (created, updated, deleted, failed)
 

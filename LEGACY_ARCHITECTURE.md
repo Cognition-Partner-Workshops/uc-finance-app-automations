@@ -40,7 +40,7 @@ The backend runs on **uvicorn** (ASGI) at port `8000` by default. The frontend i
 │  │ account_     │◄►│ trade_       │──────────────┘              │
 │  │ service.py   │  │ processor.py │ (cross-domain queries)      │
 │  └──────────────┘  │ (god service)│                             │
-│                    │ 1047 lines   │                             │
+│                    │ 848 lines    │                             │
 │  ┌──────────────┐  └──────┬───────┘  ┌───────────────────────┐  │
 │  │ /stocks/*    │         │          │ Socket.io Server       │  │
 │  │ /people/*    │         ├─────────►│ (embedded in process)  │  │
@@ -53,12 +53,11 @@ The backend runs on **uvicorn** (ASGI) at port `8000` by default. The frontend i
 │  │  ┌──────────┐ ┌──────────────┐ ┌────────┐ ┌───────────┐ │   │
 │  │  │ accounts │ │ account_users│ │ trades │ │ positions │ │   │
 │  │  └──────────┘ └──────────────┘ └────────┘ └───────────┘ │   │
-│  │          (all tenants in same tables via tenant_id)       │   │
 │  └──────────────────────────────────────────────────────────┘   │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │              Global Config (config.py)                    │   │
-│  │  Mutable runtime state, tenant rules, env vars           │   │
+│  │  Mutable runtime state, business rules, env vars         │   │
 │  │  Imported via `from app.config import *` everywhere      │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
@@ -80,22 +79,22 @@ graph TD
 
 ---
 
-## Shared Multi-Tenant Database
+## Single Shared Database
 
-The application uses a **single SQLite database** (`traderx.db`) accessed through SQLAlchemy ORM. All tenants share the same tables, separated only by a `tenant_id` column.
+The application uses a **single SQLite database** (`traderx.db`) accessed through SQLAlchemy ORM. All domains (accounts, trades, positions) share the same database file and the same SQLAlchemy session factory.
 
 ### Tables
 
-| Table | Primary Key | Tenant Isolation |
-|---|---|---|
-| `accounts` | `id` (auto-increment) | `tenant_id` column |
-| `account_users` | composite (`account_id`, `tenant_id`, `username`) | `tenant_id` column |
-| `trades` | `id` (auto-increment) | `tenant_id` column |
-| `positions` | composite (`account_id`, `tenant_id`, `security`) | `tenant_id` column |
+| Table | Primary Key |
+|---|---|
+| `accounts` | `id` (auto-increment) |
+| `account_users` | composite (`account_id`, `username`) |
+| `trades` | `id` (auto-increment) |
+| `positions` | composite (`account_id`, `security`) |
 
-### Tenant Configuration
+### Business Rule Configuration
 
-Three demo tenants are pre-seeded: `acme_corp`, `globex_inc`, `initech`. The active tenant is determined by the `X-Tenant-ID` HTTP header, falling back to the `DEFAULT_TENANT` environment variable (default: `acme_corp`). There is **no row-level security**, no schema isolation, and no runtime isolation between tenants.
+Application-wide business rules — `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` — are defined as constants in `config.py` next to environment variables and mutable runtime state, and are picked up by the service layer through the wildcard `from app.config import *` import. A demo data set is seeded on first start.
 
 ---
 
@@ -129,7 +128,7 @@ Some route handlers use the service layer, others bypass it with inline SQLAlche
 
 ## God Service: `trade_processor.py`
 
-The `trade_processor.py` module is **1,047 lines** and handles nearly all business logic:
+The `trade_processor.py` module is **848 lines** and handles nearly all business logic:
 
 | Responsibility | Functions |
 |---|---|
@@ -138,8 +137,8 @@ The `trade_processor.py` module is **1,047 lines** and handles nearly all busine
 | **Trade state machine** | `can_transition()`, `transition_trade_state()` |
 | **Position management** | `update_position()`, `get_current_position_quantity()`, `get_positions_for_account()`, `get_all_positions()` |
 | **Socket.io publishing** | `publish_trade_update()`, `publish_position_update()`, `publish_trade_and_position()` |
-| **Reporting/aggregation** | `get_account_portfolio_summary()`, `get_tenant_trading_summary()`, `get_trade_volume_by_date()`, `get_top_traders()`, `get_position_concentration()` |
-| **Tenant-specific rules** | `get_max_accounts_for_tenant()`, `check_tenant_account_limit()`, `get_tenant_trade_restrictions()`, `apply_tenant_specific_rules()` |
+| **Reporting/aggregation** | `get_account_portfolio_summary()`, `get_trade_volume_by_date()`, `get_top_traders()`, `get_position_concentration()` |
+| **Business rules** | Allowed-side check in `validate_trade_request()` (`ALLOWED_TRADE_SIDES`) and auto-settle in `process_trade()` (`AUTO_SETTLE_TRADES`), both read from `config.py` |
 | **Maintenance operations** | `settle_pending_trades()`, `cancel_stale_trades()`, `recalculate_positions()` |
 | **Audit/history** | `get_recent_trades_audit()`, `get_trade_history()` |
 | **Cross-domain helpers** | `get_account_details_for_trade()`, `validate_user_can_trade()`, `get_account_display_name()` |
@@ -172,17 +171,17 @@ There are no GitHub Actions workflows, no automated test pipeline, no linting ch
 
 ---
 
-## No Tenant Isolation
+## No Authentication or Authorization
 
-| Layer | Isolation |
+| Layer | Protection |
 |---|---|
-| **Runtime** | None — single process serves all tenants |
-| **Database** | None — single SQLite file, shared tables, `tenant_id` column only |
+| **Runtime** | None — a single process serves every request |
+| **Database** | None — single SQLite file, all tables reachable from every request |
 | **Configuration** | None — shared `config.py` with global mutable state |
-| **Network** | None — single port, single process |
-| **Secrets** | None — all tenants share the same environment variables |
+| **Network** | None — single port, single process, no TLS |
+| **Secrets** | None — plain environment variables read at import time |
 
-The `X-Tenant-ID` header is the only mechanism for identifying the current tenant. There is no authentication, no authorization, and no validation that a request is allowed to access a given tenant's data.
+There is no authentication, no authorization, and no request-level identity. Any client that can reach port `8000` can read and modify every account, trade, and position.
 
 ---
 
@@ -193,9 +192,8 @@ The following anti-patterns are **intentional** and present in the codebase by d
 ### 1. Global Mutable Configuration (`config.py`)
 
 - Every module imports config via `from app.config import *`
-- `CURRENT_TENANT` is a mutable global variable modified at runtime via `set_current_tenant()`
 - `_runtime_state` dict is mutated from multiple modules (`total_trades_processed`, `last_trade_timestamp`, etc.)
-- `KNOWN_TENANTS` list is appended to at runtime when new tenants are encountered
+- Business-rule constants live in the same namespace as environment settings and runtime counters
 
 ### 2. Inconsistent Service Layer Usage
 
@@ -215,11 +213,11 @@ The following anti-patterns are **intentional** and present in the codebase by d
 - `account_service.py` lazily imports `count_trades_for_account` from `trade_processor.py`
 - Resolved at runtime but creates fragile import ordering requirements
 
-### 5. Tenant-Specific Business Rules in Config
+### 5. Business Rules in Config
 
-- `TENANT_MAX_ACCOUNTS`, `TENANT_ALLOWED_SIDES`, `TENANT_AUTO_SETTLE` are defined as dicts in `config.py`
+- `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` are defined as constants in `config.py`
 - Business rules are coupled to configuration rather than being encapsulated in domain logic
-- Adding a new tenant requires modifying the config module
+- Changing a rule requires modifying the config module and restarting the process
 
 ### 6. No Error Boundaries
 
@@ -229,5 +227,5 @@ The following anti-patterns are **intentional** and present in the codebase by d
 
 ### 7. SQLite as Production Database
 
-- SQLite is a single-writer, file-based database not designed for concurrent multi-tenant production workloads
+- SQLite is a single-writer, file-based database not designed for concurrent production workloads
 - No connection pooling, no read replicas, no backup strategy
