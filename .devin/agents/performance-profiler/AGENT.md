@@ -37,7 +37,6 @@ for account in accounts:
 
 ### 2. Missing Database Indexes
 - Check model definitions for columns frequently used in `.filter()` or `.order_by()`
-- `tenant_id` should be indexed on every model (used in every query)
 - Foreign key columns should be indexed
 - Frequently queried fields (status, created_at) should be indexed
 
@@ -91,7 +90,7 @@ for account in accounts:
 
 ### [Unbounded] Trade list has no pagination
 - **High** — `routes/trades.py:18`
-- `GET /trade/` returns all trades for tenant with no limit
+- `GET /trade/` returns all trades with no limit
 - Impact: Response payload grows linearly with trade count
 - Fix: Add `pageSize` and `pageIndex` query params with defaults
 

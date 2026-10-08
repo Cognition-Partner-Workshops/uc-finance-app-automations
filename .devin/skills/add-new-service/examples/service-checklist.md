@@ -4,7 +4,7 @@ Copy this checklist when extracting a new domain service. Replace `<domain>` wit
 
 ## Files to Create
 
-- [ ] `traderx-monolith/app/models/<domain>.py` — SQLAlchemy model with `tenant_id` and `to_dict()`
+- [ ] `traderx-monolith/app/models/<domain>.py` — SQLAlchemy model with `to_dict()`
 - [ ] `traderx-monolith/app/services/<domain>_service.py` — CRUD + business logic
 - [ ] `traderx-monolith/app/routes/<domain>.py` — FastAPI router with Pydantic models
 - [ ] `traderx-monolith/tests/test_<domain>.py` — Integration tests using `client` fixture

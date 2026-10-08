@@ -9,7 +9,7 @@ This template provides a JSON-based structured logging configuration that can be
 Structured JSON logging configuration for TraderX.
 
 Replaces the default Python logging with JSON-formatted output that includes
-correlation IDs, tenant IDs, and structured fields for log aggregation.
+correlation IDs and structured fields for log aggregation.
 """
 
 import json
@@ -74,14 +74,13 @@ def get_logger(name: str) -> logging.Logger:
 # Replace this:
 import logging
 logger = logging.getLogger(__name__)
-logger.info("Created account %d for tenant %s", account.id, tenant_id)
+logger.info("Created account %d", account.id)
 
 # With this:
 from app.utils.logging_config import get_logger
 logger = get_logger(__name__)
 logger.info("account_created", extra={
     "account_id": account.id,
-    "tenant_id": tenant_id,
     "display_name": display_name,
 })
 ```
@@ -98,7 +97,7 @@ configure_logging(level="INFO")
 ## Output example
 
 ```json
-{"timestamp": "2025-01-15T10:30:00.123456+00:00", "level": "INFO", "logger": "app.services.account_service", "message": "account_created", "account_id": 42, "tenant_id": "acme_corp", "display_name": "Trading Account Alpha"}
+{"timestamp": "2025-01-15T10:30:00.123456+00:00", "level": "INFO", "logger": "app.services.account_service", "message": "account_created", "account_id": 42, "display_name": "Trading Account Alpha"}
 ```
 
 ## Notes

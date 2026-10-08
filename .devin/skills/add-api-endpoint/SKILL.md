@@ -19,16 +19,14 @@ This skill walks through adding a new REST endpoint to an existing route module 
 
 Add the business logic to the service module (`app/services/<domain>_service.py`) first. The service function should:
 
-- Accept `db: Session` and `tenant_id: str` as the first two arguments
-- Always filter queries by `tenant_id`
+- Accept `db: Session` as the first argument
 - Use `log_audit_event()` for state-changing operations
 - Return model instances (or `None` / raise exceptions for errors)
 
 ```python
-def get_<thing>_by_<field>(db: Session, field_value: str, tenant_id: str):
+def get_<thing>_by_<field>(db: Session, field_value: str):
     return db.query(<Model>).filter(
         <Model>.<field> == field_value,
-        <Model>.tenant_id == tenant_id,
     ).first()
 ```
 
@@ -50,7 +48,6 @@ class <Thing>Request(BaseModel):
 
 Add the endpoint to the route file. Every endpoint must:
 
-- Extract tenant via `get_tenant_from_request(request)`
 - Inject DB session via `Depends(get_db)`
 - Call the service layer — **never write inline SQLAlchemy queries**
 - Return serialized data via `to_dict()`
@@ -76,7 +73,7 @@ cd traderx-monolith && python -m pytest tests/ -v
 
 | HTTP Method | Use Case | Returns | Error |
 |---|---|---|---|
-| `GET /<domain>/` | List all for tenant | `[item.to_dict()]` | — |
+| `GET /<domain>/` | List all | `[item.to_dict()]` | — |
 | `GET /<domain>/{id}` | Get single by ID | `item.to_dict()` | 404 if not found |
 | `POST /<domain>/` | Create new | `item.to_dict()` | 400 for validation |
 | `PUT /<domain>/` | Update existing | `item.to_dict()` | 404 if not found |

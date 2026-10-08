@@ -26,7 +26,6 @@ The TraderX monolith is being decomposed into domain-aligned services per [TARGE
 Create a new model file at `traderx-monolith/app/models/<domain>.py`.
 
 - Follow the pattern in [templates/model.py.md](templates/model.py.md)
-- Include `tenant_id` column for multi-tenant filtering
 - Include a `to_dict()` method that uses camelCase keys
 - Import `Base` from `app.database` and `from app.config import *`
 - Register the model in `traderx-monolith/app/models/__init__.py`
@@ -36,7 +35,7 @@ Create a new model file at `traderx-monolith/app/models/<domain>.py`.
 Create a new service file at `traderx-monolith/app/services/<domain>_service.py`.
 
 - Follow the pattern in [templates/service.py.md](templates/service.py.md)
-- Accept `db: Session` and `tenant_id: str` as parameters on every function
+- Accept `db: Session` as the first parameter on every function
 - Use `log_audit_event()` from `app.utils.helpers` for create/update/delete operations
 - Use standard `logging.getLogger(__name__)` for operational logs
 - Register the service in `traderx-monolith/app/services/__init__.py`
@@ -47,7 +46,6 @@ Create a new route file at `traderx-monolith/app/routes/<domain>.py`.
 
 - Follow the pattern in [templates/routes.py.md](templates/routes.py.md)
 - Define Pydantic request/response models at the top of the file
-- Use `get_tenant_from_request(request)` for tenant extraction
 - Use `Depends(get_db)` for database session injection
 - Always call the service layer — do NOT write inline SQLAlchemy queries in route handlers
 - Register the router in `traderx-monolith/app/main.py` inside `create_app()`

@@ -8,12 +8,11 @@ Before/after examples showing how to convert existing unstructured log statement
 
 ```python
 # BEFORE
-logger.info("Created account %d for tenant %s", account.id, tenant_id)
+logger.info("Created account %d", account.id)
 
 # AFTER
 logger.info("account_created", extra={
     "account_id": account.id,
-    "tenant_id": tenant_id,
     "display_name": display_name,
 })
 ```
@@ -22,12 +21,11 @@ logger.info("account_created", extra={
 
 ```python
 # BEFORE
-logger.info("Updated account %d for tenant %s", account.id, tenant_id)
+logger.info("Updated account %d", account.id)
 
 # AFTER
 logger.info("account_updated", extra={
     "account_id": account.id,
-    "tenant_id": tenant_id,
     "display_name": display_name,
 })
 ```
@@ -36,14 +34,13 @@ logger.info("account_updated", extra={
 
 ```python
 # BEFORE
-logger.info("Created account user %s for account %d tenant %s",
-            username, account_id, tenant_id)
+logger.info("Created account user %s for account %d",
+            username, account_id)
 
 # AFTER
 logger.info("account_user_created", extra={
     "account_id": account_id,
     "username": username,
-    "tenant_id": tenant_id,
 })
 ```
 
@@ -64,7 +61,6 @@ logger.info("trade_processed", extra={
     "side": side,
     "quantity": quantity,
     "state": trade.state,
-    "tenant_id": tenant_id,
 })
 ```
 
@@ -78,7 +74,6 @@ logger.warning("Trade validation failed: account %d not found", account_id)
 logger.warning("trade_validation_failed", extra={
     "reason": "account_not_found",
     "account_id": account_id,
-    "tenant_id": tenant_id,
 })
 ```
 
@@ -96,7 +91,6 @@ logger.info("position_updated", extra={
     "quantity": new_quantity,
     "previous_quantity": old_quantity,
     "delta": delta,
-    "tenant_id": tenant_id,
 })
 ```
 
@@ -106,14 +100,13 @@ logger.info("position_updated", extra={
 
 ```python
 # BEFORE
-def log_audit_event(event_type: str, tenant_id: str, details: str):
-    logger.info("[AUDIT] %s tenant=%s %s", event_type, tenant_id, details)
+def log_audit_event(event_type: str, details: str):
+    logger.info("[AUDIT] %s %s", event_type, details)
 
 # AFTER
-def log_audit_event(event_type: str, tenant_id: str, details: str, **extra):
+def log_audit_event(event_type: str, details: str, **extra):
     logger.info("audit_event", extra={
         "event_type": event_type,
-        "tenant_id": tenant_id,
         "details": details,
         **extra,
     })
@@ -123,7 +116,6 @@ def log_audit_event(event_type: str, tenant_id: str, details: str, **extra):
 
 - **Message is a short, lowercase, snake_case event name** — not a formatted string
 - **Structured data goes in `extra` dict** — not interpolated into the message
-- **Always include `tenant_id`** — required for filtering in log aggregation
 - **Include entity IDs** — `account_id`, `trade_id`, `position_id` for correlation
 - **Use appropriate log levels**:
   - `DEBUG` — verbose diagnostic info

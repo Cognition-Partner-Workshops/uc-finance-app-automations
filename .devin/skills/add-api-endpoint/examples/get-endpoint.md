@@ -8,15 +8,13 @@ The endpoint below follows best practices — it delegates entirely to the servi
 
 ```python
 @router.get("/account/")
-def list_accounts(request: Request, db: Session = Depends(get_db)):
-    """List all accounts for the current tenant."""
-    tenant_id = get_tenant_from_request(request)
-    accounts = account_service.get_all_accounts(db, tenant_id)
+def list_accounts(db: Session = Depends(get_db)):
+    """List all accounts."""
+    accounts = account_service.get_all_accounts(db)
     return [a.to_dict() for a in accounts]
 ```
 
 **What makes this clean:**
-- Extracts tenant from request
 - Calls service layer function
 - Returns serialized list via `to_dict()`
 - No inline SQLAlchemy queries
@@ -28,10 +26,8 @@ The `GET /account/{account_id}` endpoint in the current codebase has a cross-dom
 ```python
 # ❌ DON'T DO THIS — cross-domain query
 @router.get("/account/{account_id}")
-def get_account(account_id: int, request: Request,
-                db: Session = Depends(get_db)):
-    tenant_id = get_tenant_from_request(request)
-    account = account_service.get_account_by_id(db, account_id, tenant_id)
+def get_account(account_id: int, db: Session = Depends(get_db)):
+    account = account_service.get_account_by_id(db, account_id)
     if account is None:
         raise HTTPException(status_code=404,
                             detail=f"Account {account_id} not found")
@@ -39,7 +35,6 @@ def get_account(account_id: int, request: Request,
     # ❌ Cross-domain query: directly queries positions table
     positions = db.query(Position).filter(
         Position.account_id == account_id,
-        Position.tenant_id == tenant_id,
     ).all()
 
     result = account.to_dict()

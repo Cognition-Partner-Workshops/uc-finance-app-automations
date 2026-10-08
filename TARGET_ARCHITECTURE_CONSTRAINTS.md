@@ -4,27 +4,26 @@ This document describes the **target state** architecture that TraderX should be
 
 ---
 
-## 1. Single-Tenant Isolation
+## 1. Isolated Deployments
 
-Each tenant must run in complete isolation with no shared runtime state between tenants.
+TraderX serves one customer per installation: each customer runs its own deployment with no shared runtime state between deployments.
 
-- Each tenant gets its own set of running service instances
-- No shared in-memory state (no global `CURRENT_TENANT`, no shared `_runtime_state`)
-- Tenant configuration is injected per deployment, not read from a shared config module
-- A failure in one tenant's services must not affect other tenants
-- Tenant-specific business rules (max accounts, allowed sides, auto-settle) are stored per-tenant, not in a shared config dict
+- Each deployment gets its own set of running service instances
+- No shared mutable in-memory state between service instances (no process-global `_runtime_state`)
+- Configuration — including business rules such as max accounts, allowed sides, auto-settle — is injected per deployment via environment variables or secrets, not read from a shared config module
+- A failure in one deployment must not affect any other deployment
 
 ---
 
-## 2. Database-per-Tenant or Schema-per-Tenant
+## 2. Dedicated Database per Deployment
 
-Each tenant must have its own database or database schema. No shared tables.
+Each deployment must have its own database or database schema. No database is shared between deployments.
 
-- **Option A: Database-per-tenant** — each tenant gets a dedicated database instance (e.g., separate PostgreSQL or Azure SQL databases)
-- **Option B: Schema-per-tenant** — each tenant gets a dedicated schema within a shared database cluster
-- The `tenant_id` column is no longer needed for row-level filtering; isolation is enforced at the infrastructure level
-- Database credentials are tenant-specific and injected via environment variables or secrets management
-- Cross-tenant queries are impossible by design
+- **Option A: Database-per-deployment** — each deployment gets a dedicated database instance (e.g., separate PostgreSQL or Azure SQL databases)
+- **Option B: Schema-per-deployment** — each deployment gets a dedicated schema within a shared database cluster
+- Isolation is enforced at the infrastructure level, not by filtering in application code
+- Database credentials are deployment-specific and injected via environment variables or secrets management
+- Cross-deployment queries are impossible by design
 
 ---
 
@@ -81,7 +80,7 @@ All infrastructure must be defined as code using Terraform.
 
 - VPC/VNet, subnets, security groups
 - Kubernetes cluster (EKS or AKS)
-- Database instances (RDS/Azure SQL) — one per tenant
+- Database instances (RDS/Azure SQL) — one per deployment
 - Container registry (ECR/ACR)
 - Load balancers and DNS records
 - Secrets manager configuration
@@ -131,7 +130,7 @@ A central API gateway must handle all ingress traffic.
 - Routes requests to the appropriate service based on path prefix
 - Handles TLS termination
 - Enforces authentication and authorization (e.g., JWT validation)
-- Rate limiting per tenant and per client
+- Rate limiting per client
 - Request/response logging
 - CORS configuration centralized at the gateway level
 - Candidate technologies: AWS API Gateway, Azure API Management, Kong, or Kubernetes Ingress with nginx
@@ -144,13 +143,13 @@ The system must have comprehensive observability covering logs, metrics, and tra
 
 ### Structured Logging
 - All services emit structured JSON logs
-- Logs include correlation IDs, tenant IDs, and request IDs
+- Logs include correlation IDs and request IDs
 - Logs are aggregated in a central logging platform (e.g., CloudWatch, Azure Monitor, ELK)
 
 ### Metrics (Prometheus)
 - Each service exposes a `/metrics` endpoint in Prometheus format
 - Key metrics: request rate, error rate, latency percentiles, active connections
-- Business metrics: trades per second, position updates per second, active tenants
+- Business metrics: trades per second, position updates per second, active accounts
 - Prometheus scrapes all service metrics; Grafana dashboards for visualization
 - Alerting rules defined for SLO violations
 
@@ -166,7 +165,7 @@ The system must have comprehensive observability covering logs, metrics, and tra
 
 | Constraint | Current State | Target State |
 |---|---|---|
-| Tenant isolation | Shared runtime, shared DB, `tenant_id` column | Isolated runtime, database-per-tenant |
+| Deployment isolation | Single process and SQLite file on one host | Dedicated runtime and database per deployment |
 | Deployment | Manual `deploy.sh` | Kubernetes (EKS/AKS) with Terraform |
 | CI/CD | None | GitHub Actions with automated pipeline |
 | Service architecture | Single monolith (1 process) | 5+ independent services |
