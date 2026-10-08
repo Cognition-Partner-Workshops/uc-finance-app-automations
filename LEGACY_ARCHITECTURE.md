@@ -40,7 +40,7 @@ The backend runs on **uvicorn** (ASGI) at port `8000` by default. The frontend i
 │  │ account_     │◄►│ trade_       │──────────────┘              │
 │  │ service.py   │  │ processor.py │ (cross-domain queries)      │
 │  └──────────────┘  │ (god service)│                             │
-│                    │ 1047 lines   │                             │
+│                    │ 848 lines    │                             │
 │  ┌──────────────┐  └──────┬───────┘  ┌───────────────────────┐  │
 │  │ /stocks/*    │         │          │ Socket.io Server       │  │
 │  │ /people/*    │         ├─────────►│ (embedded in process)  │  │
@@ -94,7 +94,7 @@ The application uses a **single SQLite database** (`traderx.db`) accessed throug
 
 ### Business Rule Configuration
 
-Application-wide business rules — `MAX_ACCOUNTS`, `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` — are defined as constants in `config.py` next to environment variables and mutable runtime state, and are picked up by the service layer through the wildcard `from app.config import *` import. A demo data set is seeded on first start.
+Application-wide business rules — `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` — are defined as constants in `config.py` next to environment variables and mutable runtime state, and are picked up by the service layer through the wildcard `from app.config import *` import. A demo data set is seeded on first start.
 
 ---
 
@@ -128,7 +128,7 @@ Some route handlers use the service layer, others bypass it with inline SQLAlche
 
 ## God Service: `trade_processor.py`
 
-The `trade_processor.py` module is **1,047 lines** and handles nearly all business logic:
+The `trade_processor.py` module is **848 lines** and handles nearly all business logic:
 
 | Responsibility | Functions |
 |---|---|
@@ -137,8 +137,8 @@ The `trade_processor.py` module is **1,047 lines** and handles nearly all busine
 | **Trade state machine** | `can_transition()`, `transition_trade_state()` |
 | **Position management** | `update_position()`, `get_current_position_quantity()`, `get_positions_for_account()`, `get_all_positions()` |
 | **Socket.io publishing** | `publish_trade_update()`, `publish_position_update()`, `publish_trade_and_position()` |
-| **Reporting/aggregation** | `get_account_portfolio_summary()`, `get_trading_summary()`, `get_trade_volume_by_date()`, `get_top_traders()`, `get_position_concentration()` |
-| **Business rules** | Account-limit, allowed-side and auto-settle checks driven by `MAX_ACCOUNTS`, `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` from `config.py` |
+| **Reporting/aggregation** | `get_account_portfolio_summary()`, `get_trade_volume_by_date()`, `get_top_traders()`, `get_position_concentration()` |
+| **Business rules** | Allowed-side check in `validate_trade_request()` (`ALLOWED_TRADE_SIDES`) and auto-settle in `process_trade()` (`AUTO_SETTLE_TRADES`), both read from `config.py` |
 | **Maintenance operations** | `settle_pending_trades()`, `cancel_stale_trades()`, `recalculate_positions()` |
 | **Audit/history** | `get_recent_trades_audit()`, `get_trade_history()` |
 | **Cross-domain helpers** | `get_account_details_for_trade()`, `validate_user_can_trade()`, `get_account_display_name()` |
@@ -215,7 +215,7 @@ The following anti-patterns are **intentional** and present in the codebase by d
 
 ### 5. Business Rules in Config
 
-- `MAX_ACCOUNTS`, `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` are defined as constants in `config.py`
+- `ALLOWED_TRADE_SIDES`, `AUTO_SETTLE_TRADES` are defined as constants in `config.py`
 - Business rules are coupled to configuration rather than being encapsulated in domain logic
 - Changing a rule requires modifying the config module and restarting the process
 

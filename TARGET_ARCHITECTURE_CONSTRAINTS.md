@@ -10,7 +10,7 @@ TraderX serves one customer per installation: each customer runs its own deploym
 
 - Each deployment gets its own set of running service instances
 - No shared mutable in-memory state between service instances (no process-global `_runtime_state`)
-- Configuration — including business rules such as max accounts, allowed sides, auto-settle — is injected per deployment via environment variables or secrets, not read from a shared config module
+- Configuration — including business rules such as allowed trade sides and auto-settle — is injected per deployment via environment variables or secrets, not read from a shared config module
 - A failure in one deployment must not affect any other deployment
 
 ---
