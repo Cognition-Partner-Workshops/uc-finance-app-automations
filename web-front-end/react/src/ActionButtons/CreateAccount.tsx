@@ -13,7 +13,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import { Environment } from '../env';
-import { fetchWithTenant } from '../fetchWithTenant';
+import { apiFetch } from '../apiFetch';
 
 export const CreateAccount = () => {
 	const [open, setOpen] = useState(false);
@@ -43,7 +43,7 @@ export const CreateAccount = () => {
 		setSubmitting(true);
 		setError('');
 		try {
-			const response = await fetchWithTenant(`${Environment.account_service_url}/account/`, {
+			const response = await apiFetch(`${Environment.account_service_url}/account/`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

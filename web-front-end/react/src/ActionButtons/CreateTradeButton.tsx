@@ -19,7 +19,7 @@ import AddIcon from '@mui/icons-material/Add';
 import Grid from '@mui/material/Grid';
 import { ActionButtonsProps, RefData, Side } from './types';
 import { Environment } from '../env';
-import { fetchWithTenant } from '../fetchWithTenant';
+import { apiFetch } from '../apiFetch';
 
 export const CreateTradeButton = ({ accountId }: ActionButtonsProps) => {
 	const [refData, setRefData] = useState<RefData[]>([]);
@@ -42,7 +42,7 @@ export const CreateTradeButton = ({ accountId }: ActionButtonsProps) => {
 		setQuantity('');
 		setLoading(true);
 		try {
-			const response = await fetchWithTenant(`${Environment.reference_data_url}/stocks`);
+			const response = await apiFetch(`${Environment.reference_data_url}/stocks`);
 			const data = await response.json();
 			setRefData(data);
 		} catch (error) {
@@ -61,7 +61,7 @@ export const CreateTradeButton = ({ accountId }: ActionButtonsProps) => {
 		const tradeId = Math.floor(Math.random() * 1000000);
 		setSubmitting(true);
 		try {
-			const response = await fetchWithTenant(`${Environment.trade_service_url}/trade/`, {
+			const response = await apiFetch(`${Environment.trade_service_url}/trade/`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
