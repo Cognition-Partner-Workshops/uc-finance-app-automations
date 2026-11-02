@@ -100,3 +100,17 @@ test('aborts the request on unmount', () => {
 	unmount();
 	expect(signal?.aborted).toBe(true);
 });
+
+test('retries a failed request for the same account when the refresh version changes', async () => {
+	mockFetch.mockResolvedValueOnce(response(summary, false));
+	mockFetch.mockResolvedValueOnce(response());
+	const { result, rerender } = renderHook(
+		({ version }) => GetAccountSummary(1, version), { initialProps: { version: 0 } }
+	);
+	await waitFor(() => expect(result.current.error).toBe(true));
+	rerender({ version: 1 });
+	expect(result.current).toEqual({ summary: null, error: false });
+	await waitFor(() => expect(result.current.summary).toEqual(summary));
+	expect(mockFetch).toHaveBeenCalledTimes(2);
+	expect(result.current.error).toBe(false);
+});

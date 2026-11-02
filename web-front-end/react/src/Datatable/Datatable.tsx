@@ -6,6 +6,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { SelectChangeEvent } from '@mui/material';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -199,8 +200,12 @@ export const Datatable = () => {
 
 			{/* Summary stat cards */}
 			{hasAccount && summaryError && (
-				<Alert severity="error" sx={{ mb: 2 }}>
-					Account summary unavailable. Select the account again to retry.
+				<Alert
+					severity="error"
+					sx={{ mb: 2 }}
+					action={<Button color="inherit" onClick={() => setSummaryVersion((current) => current + 1)}>Retry</Button>}
+				>
+					Account summary unavailable.
 				</Alert>
 			)}
 			{hasAccount && (
