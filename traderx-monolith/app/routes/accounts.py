@@ -17,7 +17,7 @@ from app.config import *  # noqa: F401,F403 — intentional global config import
 from app.database import get_db
 from app.models.account import Account, AccountUser
 from app.models.position import Position
-from app.services import account_service
+from app.services import account_service, trade_processor
 from app.services.people_service import validate_person
 from app.utils.helpers import get_tenant_from_request, log_audit_event
 
@@ -38,6 +38,15 @@ class AccountCreate(BaseModel):
 class AccountUserCreate(BaseModel):
     accountId: int
     username: str
+
+
+class AccountSummary(BaseModel):
+    totalTrades: int
+    settledTrades: int
+    pendingTrades: int
+    totalBuyQuantity: int
+    totalSellQuantity: int
+    netQuantity: int
 
 
 # =============================================================================
@@ -97,6 +106,19 @@ def get_account(account_id: int, request: Request,
     result = account.to_dict()
     result["positions"] = [p.to_dict() for p in positions]
     return result
+
+
+@router.get("/account/{accountId}/summary", response_model=AccountSummary)
+def get_account_summary(accountId: int, request: Request,
+                        db: Session = Depends(get_db)):
+    """Return trade statistics; quantities include settled trades only."""
+    tenantId = get_tenant_from_request(request)
+    summary = trade_processor.get_account_portfolio_summary(
+        db, accountId, tenantId
+    )
+    if "error" in summary:
+        raise HTTPException(status_code=404, detail=summary["error"])
+    return summary["statistics"]
 
 
 # =============================================================================
